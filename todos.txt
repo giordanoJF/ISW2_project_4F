@@ -16,3 +16,7 @@ Sonar link plugin and SonarCloud.
 x% to include/exclude.
 
 Proportion.
+
+Remove warning where it is possible.
+
+Read all the codebase again.
