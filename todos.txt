@@ -1,0 +1,18 @@
+Consistency checks are based on the JSON response, not based on the implemented evaluation logic:
+    FV != very first project version (?)
+    #FV = 1
+    #AV > 1
+
+
+
+Is it necessary to sort versions? Could implicate problems during IV and OV evaluation?
+
+Inconsistency between no AV (empty array) and no IV (null).
+
+Check if OV is correctly evaluated.
+
+Sonar link plugin and SonarCloud.
+
+x% to include/exclude.
+
+Proportion.
