@@ -16,6 +16,12 @@ public class Ticket {
     private List<String> affectedVersions; // AV
     private String injectedVersion; // IV (oldest AV)
 
+//if missing AV (Affected Versions): Empty array (`[]`), never null
+//if missing FV (Fixed Versions): Empty array (`[]`), never null
+//if missing IV (Injected Version): `null` if missing, converted to empty string when exported to CSV
+//if missing OV (Opening Version): `null` if missing, converted to empty string when exported to CSV
+
+
     // Constructor
     public Ticket() {
     }
