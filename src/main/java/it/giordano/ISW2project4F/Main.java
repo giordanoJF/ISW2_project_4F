@@ -23,13 +23,16 @@ public class Main {
         // Retrieve tickets
         List<Ticket> tickets = controller.retrieveTickets(projectKey);
 
+        // Clean tickets
+        List<Ticket> cleanedTickets = controller.cleanTickets(tickets, projectKey);
+
         // Export data to CSV files
         String versionsFile = controller.exportVersionsAsCsv(versions, projectKey);
         if (versionsFile != null) {
             System.out.println("Versions exported to: " + versionsFile);
         }
 
-        String ticketsFile = controller.exportTicketsAsCsv(tickets, projectKey);
+        String ticketsFile = controller.exportTicketsAsCsv(cleanedTickets, projectKey);
         if (ticketsFile != null) {
             System.out.println("Tickets exported to: " + ticketsFile);
         }

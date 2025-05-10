@@ -58,3 +58,27 @@ lots of rows have not FV but are actually status fixed. we cut them off.
 what can we do with more FV ? use the last is probably ok or mabe cut them off. is possible that a ticket war reopened, so we take the last FV
 
 What is better between "lot of data with low accuracy" and "low data with lot of accuracy" ? This question will define what to cut from the rows and what to estimate.
+
+we will retrive commits linket to ticket , not ticket linket to commit. the process is : take the ticket id, retrive commits with that id inside the comment. so first we clean them, and after we retrive commits.
+
+we could use proportion also when oldest AV > OP
+
+remove comments
+
+maybe create a component to get IV from AV , because we evaluate IV at the start and also after proportion.
+
+we can use proportion also in some cutted off ticket...
+
+tickets have inside versions, that have inside dates. so probably there is some redundant jira version array in the code.
+
+Divide the logic of TicketCleaningService.java
+
+return of csv cleaner must be a string to print on the terminal as other csv exporter.
+
+must realize proportion.
+
+do not use stream.
+
+controller.cleanTickets(tickets, projectKey) should not take projectKey param
+
+service methods should not call other methods. for example retrieveTickets() should not call getProjectVersions() inside it, but the controller should call retrieveTickets(getProjectVersions())

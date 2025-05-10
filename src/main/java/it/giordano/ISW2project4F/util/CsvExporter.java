@@ -2,6 +2,7 @@ package it.giordano.ISW2project4F.util;
 
 import it.giordano.ISW2project4F.model.Ticket;
 import it.giordano.ISW2project4F.model.Version;
+import it.giordano.ISW2project4F.service.TicketCleaningService;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -149,4 +150,39 @@ public class CsvExporter {
 
         return field;
     }
+
+    /**
+     * Exports removed tickets to a CSV file in the target folder.
+     *
+     * @param removedTickets List of removed tickets with reasons
+     * @param projectKey The project key for naming the file
+     * @return The path to the created file
+     * @throws IOException If an error occurs during file creation
+     */
+    public static String exportRemovedTicketsAsCsv(List<TicketCleaningService.RemovedTicket> removedTickets, String projectKey) throws IOException {
+        String fileName = "target/" + projectKey + "_removed_tickets.csv";
+        File directory = new File("target");
+        if (!directory.exists()) {
+            directory.mkdirs();
+        }
+
+        try (FileWriter writer = new FileWriter(fileName)) {
+            // Write header
+            writer.append("Key,Summary,RemovalReason\n");
+
+            // Write data
+            for (TicketCleaningService.RemovedTicket removedTicket : removedTickets) {
+                Ticket ticket = removedTicket.getTicket();
+                writer.append(escapeCsvField(ticket.getKey()))
+                        .append(",")
+                        .append(escapeCsvField(ticket.getSummary()))
+                        .append(",")
+                        .append(escapeCsvField(removedTicket.getReason()))
+                        .append("\n");
+            }
+        }
+
+        return fileName;
+    }
+
 }

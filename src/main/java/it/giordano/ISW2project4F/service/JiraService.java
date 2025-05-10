@@ -68,7 +68,7 @@ public class JiraService {
      */
     public List<Ticket> retrieveTickets(String projectKey) throws IOException {
         List<Ticket> tickets = new ArrayList<>();
-        List<Version> versions = getProjectVersions(projectKey);
+        List<Version> versions = getProjectVersions(projectKey); //not redundant because tickets hold version objects only after their build (and we are build theme right here). maybe we should pass this as a parameter.
         Map<String, Version> versionMap = new HashMap<>();
 
         for (Version version : versions) {

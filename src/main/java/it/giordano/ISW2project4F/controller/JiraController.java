@@ -3,6 +3,7 @@ package it.giordano.ISW2project4F.controller;
 import it.giordano.ISW2project4F.model.Ticket;
 import it.giordano.ISW2project4F.model.Version;
 import it.giordano.ISW2project4F.service.JiraService;
+import it.giordano.ISW2project4F.service.TicketCleaningService;
 import it.giordano.ISW2project4F.util.CsvExporter;
 
 import java.io.IOException;
@@ -80,4 +81,33 @@ public class JiraController {
             return null;
         }
     }
+
+    /**
+     * Cleans the list of tickets based on specified validation rules.
+     *
+     * @param tickets List of tickets to clean
+     * @param projectKey The project key for exporting removed tickets
+     * @return List of valid tickets
+     */
+    public List<Ticket> cleanTickets(List<Ticket> tickets, String projectKey) {
+        TicketCleaningService cleaningService = new TicketCleaningService();
+
+        // Clean tickets
+        List<Ticket> cleanedTickets = cleaningService.cleanTickets(tickets);
+
+        // Export removed tickets
+        List<TicketCleaningService.RemovedTicket> removedTickets = cleaningService.getRemovedTickets();
+        if (!removedTickets.isEmpty()) {
+            try {
+                String exportPath = CsvExporter.exportRemovedTicketsAsCsv(removedTickets, projectKey);
+                System.out.println("Removed tickets exported to: " + exportPath);
+            } catch (IOException e) {
+                System.err.println("Error exporting removed tickets to CSV: " + e.getMessage());
+                e.printStackTrace();
+            }
+        }
+
+        return cleanedTickets;
+    }
+
 }
