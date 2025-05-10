@@ -4,7 +4,6 @@ package it.giordano.ISW2project4F;
 import it.giordano.ISW2project4F.controller.JiraController;
 import it.giordano.ISW2project4F.model.Ticket;
 import it.giordano.ISW2project4F.model.Version;
-import it.giordano.ISW2project4F.view.ConsoleView;
 
 import java.util.List;
 import java.util.Scanner;

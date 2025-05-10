@@ -83,7 +83,7 @@ public class JiraService {
         String encodedJql = java.net.URLEncoder.encode(jql, StandardCharsets.UTF_8);
         int startAt = 0;
         int maxResults = 100;
-        int total = 0;
+        int total;
 
         do {
             String url = JIRA_BASE_URL + "/search?jql=" + encodedJql +
@@ -109,9 +109,6 @@ public class JiraService {
         return tickets;
     }
 
-    /**
-     * Parses a JSON issue into a Ticket object.
-     */
     /**
      * Parses a JSON issue into a Ticket object.
      */
