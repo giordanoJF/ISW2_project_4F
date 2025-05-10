@@ -38,6 +38,7 @@ public class JiraService {
         for (int i = 0; i < versionArray.length(); i++) {
             JSONObject versionJson = versionArray.getJSONObject(i);
             Version version = new Version();
+            //the next fields are always found in the JSON, so no need to check if they exist
             version.setId(versionJson.getString("id"));
             version.setName(versionJson.getString("name"));
             version.setReleased(versionJson.getBoolean("released"));
@@ -192,7 +193,7 @@ public class JiraService {
         // Set opening version (OV)
         // We need to find the version active at the time the ticket was created
         if (ticket.getCreatedDate() != null) {
-            Version latestBeforeCreation = getLatestBeforeCreation(versionMap, ticket);
+            Version latestBeforeCreation = getLatestVersionBeforeTicketCreation(versionMap, ticket);
 
             if (latestBeforeCreation != null) {
                 ticket.setOpeningVersion(latestBeforeCreation);
@@ -202,7 +203,7 @@ public class JiraService {
         return ticket;
     }
 
-    private static Version getLatestBeforeCreation(Map<String, Version> versionMap, Ticket ticket) {
+    private static Version getLatestVersionBeforeTicketCreation(Map<String, Version> versionMap, Ticket ticket) {
         Version latestBeforeCreation = null;
 
         for (Version version : versionMap.values()) {

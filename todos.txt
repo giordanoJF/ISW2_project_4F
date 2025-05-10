@@ -27,3 +27,11 @@ Do we want non-released versions?
 make the ticket fields real version objects?
 
 no versions names duplicates are supported.
+
+CsvExporter saves too much info.
+
+according to sort versions objects, and to OPERATE with them, we must use dates. (some version "names" are inconsistent with their release dates)
+
+what if no versions are found?
+
+we use different null checks on different JSON fields.
