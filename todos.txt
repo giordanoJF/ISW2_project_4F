@@ -23,3 +23,7 @@ Remove warning where it is possible.
 Read all the codebase again.
 
 Do we want non-released versions?
+
+make the ticket fields real version objects?
+
+no versions names duplicates are supported.

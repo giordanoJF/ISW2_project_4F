@@ -7,6 +7,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.List;
 
 public class CsvExporter {
@@ -96,22 +97,34 @@ public class CsvExporter {
                 writer.append(",");
 
                 // OpeningVersion
-                writer.append(escapeCsvField(ticket.getOpeningVersion()))
-                        .append(",");
+                if (ticket.getOpeningVersion() != null) {
+                    writer.append(escapeCsvField(ticket.getOpeningVersion().getName()));
+                }
+                writer.append(",");
 
                 // FixedVersions - Updated to handle multiple versions
                 if (ticket.getFixedVersions() != null && !ticket.getFixedVersions().isEmpty()) {
-                    writer.append(escapeCsvField(String.join(";", ticket.getFixedVersions())));
+                    List<String> versionNames = new ArrayList<>();
+                    for (Version version : ticket.getFixedVersions()) {
+                        versionNames.add(version.getName());
+                    }
+                    writer.append(escapeCsvField(String.join(";", versionNames)));
                 }
                 writer.append(",");
 
                 // InjectedVersion
-                writer.append(escapeCsvField(ticket.getInjectedVersion()))
-                        .append(",");
+                if (ticket.getInjectedVersion() != null) {
+                    writer.append(escapeCsvField(ticket.getInjectedVersion().getName()));
+                }
+                writer.append(",");
 
                 // AffectedVersions
                 if (ticket.getAffectedVersions() != null && !ticket.getAffectedVersions().isEmpty()) {
-                    writer.append(escapeCsvField(String.join(";", ticket.getAffectedVersions())));
+                    List<String> versionNames = new ArrayList<>();
+                    for (Version version : ticket.getAffectedVersions()) {
+                        versionNames.add(version.getName());
+                    }
+                    writer.append(escapeCsvField(String.join(";", versionNames)));
                 }
 
                 writer.append("\n");

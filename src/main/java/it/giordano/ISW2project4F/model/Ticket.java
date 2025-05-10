@@ -1,5 +1,6 @@
 package it.giordano.ISW2project4F.model;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Date;
 
@@ -11,19 +12,16 @@ public class Ticket {
     private Date resolutionDate;
     private String status;
     private String resolution;
-    private String openingVersion; // OV
-    private List<String> fixedVersions;   // FV (changed from String to List<String>)
-    private List<String> affectedVersions; // AV
-    private String injectedVersion; // IV (oldest AV)
-
-//if missing AV (Affected Versions): Empty array (`[]`), never null
-//if missing FV (Fixed Versions): Empty array (`[]`), never null
-//if missing IV (Injected Version): `null` if missing, converted to empty string when exported to CSV
-//if missing OV (Opening Version): `null` if missing, converted to empty string when exported to CSV
-
+    private Version openingVersion; // OV
+    private List<Version> fixedVersions; // FV
+    private List<Version> affectedVersions; // AV
+    private Version injectedVersion; // IV (oldest AV)
 
     // Constructor
     public Ticket() {
+        //avoiding null pointer exception
+        this.fixedVersions = new ArrayList<>();
+        this.affectedVersions = new ArrayList<>();
     }
 
     // Getters and Setters
@@ -83,35 +81,49 @@ public class Ticket {
         this.resolution = resolution;
     }
 
-    public String getOpeningVersion() {
+    public Version getOpeningVersion() {
         return openingVersion;
     }
 
-    public void setOpeningVersion(String openingVersion) {
+    public void setOpeningVersion(Version openingVersion) {
         this.openingVersion = openingVersion;
     }
 
-    public List<String> getFixedVersions() {
+    public List<Version> getFixedVersions() {
         return fixedVersions;
     }
 
-    public void setFixedVersions(List<String> fixedVersions) {
+    public void setFixedVersions(List<Version> fixedVersions) {
         this.fixedVersions = fixedVersions;
     }
 
-    public List<String> getAffectedVersions() {
+    public void addFixedVersion(Version version) {
+        if (this.fixedVersions == null) {
+            this.fixedVersions = new ArrayList<>();
+        }
+        this.fixedVersions.add(version);
+    }
+
+    public List<Version> getAffectedVersions() {
         return affectedVersions;
     }
 
-    public void setAffectedVersions(List<String> affectedVersions) {
+    public void setAffectedVersions(List<Version> affectedVersions) {
         this.affectedVersions = affectedVersions;
     }
 
-    public String getInjectedVersion() {
+    public void addAffectedVersion(Version version) {
+        if (this.affectedVersions == null) {
+            this.affectedVersions = new ArrayList<>();
+        }
+        this.affectedVersions.add(version);
+    }
+
+    public Version getInjectedVersion() {
         return injectedVersion;
     }
 
-    public void setInjectedVersion(String injectedVersion) {
+    public void setInjectedVersion(Version injectedVersion) {
         this.injectedVersion = injectedVersion;
     }
 
@@ -122,10 +134,20 @@ public class Ticket {
                 ", summary='" + summary + '\'' +
                 ", status='" + status + '\'' +
                 ", resolution='" + resolution + '\'' +
-                ", openingVersion='" + openingVersion + '\'' +
-                ", fixedVersions=" + fixedVersions +
-                ", affectedVersions=" + affectedVersions +
-                ", injectedVersion='" + injectedVersion + '\'' +
+                ", openingVersion=" + (openingVersion != null ? openingVersion.getName() : "null") +
+                ", fixedVersions=" + getVersionNames(fixedVersions) +
+                ", affectedVersions=" + getVersionNames(affectedVersions) +
+                ", injectedVersion=" + (injectedVersion != null ? injectedVersion.getName() : "null") +
                 '}';
+    }
+
+    private List<String> getVersionNames(List<Version> versions) {
+        List<String> names = new ArrayList<>();
+        if (versions != null) {
+            for (Version version : versions) {
+                names.add(version.getName());
+            }
+        }
+        return names;
     }
 }

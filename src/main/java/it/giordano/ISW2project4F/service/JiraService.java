@@ -125,7 +125,7 @@ public class JiraService {
         // Set created date
         try {
             if (fields.has("created")) {
-                ticket.setCreatedDate(DATE_FORMAT.parse(fields.getString("created")));
+                ticket.setCreatedDate(DATE_FORMAT.parse(fields.getString("created"))); //different dateformat from the version, because is possible to have more tickets in the same day
             }
         } catch (ParseException e) {
             e.printStackTrace();
@@ -150,44 +150,39 @@ public class JiraService {
             ticket.setResolution(fields.getJSONObject("resolution").getString("name"));
         }
 
-        // Set fixed versions (FV) - now storing all fixed versions
-        List<String> fixVersions = new ArrayList<>();
+        // Set fixed versions (FV)
         if (fields.has("fixVersions")) {
             JSONArray fixVersionsArray = fields.getJSONArray("fixVersions");
             for (int i = 0; i < fixVersionsArray.length(); i++) {
                 JSONObject versionJson = fixVersionsArray.getJSONObject(i);
-                fixVersions.add(versionJson.getString("name"));
+                String versionName = versionJson.getString("name");
+                if (versionMap.containsKey(versionName)) {
+                    ticket.addFixedVersion(versionMap.get(versionName));
+                }
             }
         }
 
-        ticket.setFixedVersions(fixVersions);
-
         // Set affected versions (AV)
-        List<String> affectedVersions = new ArrayList<>();
         if (fields.has("versions")) {
             JSONArray versionsArray = fields.getJSONArray("versions");
             for (int i = 0; i < versionsArray.length(); i++) {
                 JSONObject versionJson = versionsArray.getJSONObject(i);
-                affectedVersions.add(versionJson.getString("name"));
+                String versionName = versionJson.getString("name");
+                if (versionMap.containsKey(versionName)) {
+                    ticket.addAffectedVersion(versionMap.get(versionName));
+                }
             }
         }
-        ticket.setAffectedVersions(affectedVersions);
 
         // Set injected version (IV) as the oldest AV
-        if (!affectedVersions.isEmpty()) {
-            // Find the oldest version based on release dates
-            String oldestVersion = affectedVersions.getFirst();
-            Date oldestDate = versionMap.containsKey(oldestVersion) ?
-                    versionMap.get(oldestVersion).getReleaseDate() :
-                    null;
+        if (ticket.getAffectedVersions() != null && !ticket.getAffectedVersions().isEmpty()) {
+            Version oldestVersion = ticket.getAffectedVersions().getFirst();
 
-            for (String version : affectedVersions) {
-                if (versionMap.containsKey(version) && versionMap.get(version).getReleaseDate() != null) {
-                    Date versionDate = versionMap.get(version).getReleaseDate();
-                    if (oldestDate == null || versionDate.before(oldestDate)) {
-                        oldestDate = versionDate;
-                        oldestVersion = version;
-                    }
+            for (Version version : ticket.getAffectedVersions()) {
+                if (version.getReleaseDate() != null &&
+                        (oldestVersion.getReleaseDate() == null ||
+                                version.getReleaseDate().before(oldestVersion.getReleaseDate()))) {
+                    oldestVersion = version;
                 }
             }
 
@@ -197,19 +192,30 @@ public class JiraService {
         // Set opening version (OV)
         // We need to find the version active at the time the ticket was created
         if (ticket.getCreatedDate() != null) {
-            for (Version version : versionMap.values()) {
-                if (version.getReleaseDate() != null &&
-                        !version.getReleaseDate().after(ticket.getCreatedDate())) {
-                    // Find the most recent version that was released before the ticket was created
-                    if (ticket.getOpeningVersion() == null ||
-                            version.getReleaseDate().after(versionMap.get(ticket.getOpeningVersion()).getReleaseDate())) {
-                        ticket.setOpeningVersion(version.getName());
-                    }
-                }
+            Version latestBeforeCreation = getLatestBeforeCreation(versionMap, ticket);
+
+            if (latestBeforeCreation != null) {
+                ticket.setOpeningVersion(latestBeforeCreation);
             }
         }
 
         return ticket;
+    }
+
+    private static Version getLatestBeforeCreation(Map<String, Version> versionMap, Ticket ticket) {
+        Version latestBeforeCreation = null;
+
+        for (Version version : versionMap.values()) {
+            if (version.getReleaseDate() != null &&
+                    !version.getReleaseDate().after(ticket.getCreatedDate())) {
+                // Find the most recent version that was released before the ticket was created
+                if (latestBeforeCreation == null ||
+                        version.getReleaseDate().after(latestBeforeCreation.getReleaseDate())) {
+                    latestBeforeCreation = version;
+                }
+            }
+        }
+        return latestBeforeCreation;
     }
 
     /**
