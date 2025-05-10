@@ -11,20 +11,18 @@ import java.util.Scanner;
 
 public class Main {
     public static void main(String[] args) {
-        ConsoleView view = new ConsoleView();
+
         JiraController controller = new JiraController();
 
         Scanner scanner = new Scanner(System.in);
         System.out.println("Enter the target project key (e.g., BOOKKEEPER, HADOOP, etc.):");
         String projectKey = scanner.nextLine();
 
-        // Retrieve and display versions
+        // Retrieve versions
         List<Version> versions = controller.getProjectVersions(projectKey);
-//        view.displayVersions(versions);
 
-        // Retrieve and display tickets
+        // Retrieve tickets
         List<Ticket> tickets = controller.retrieveTickets(projectKey);
-//        view.displayTickets(tickets);
 
         // Export data to CSV files
         String versionsFile = controller.exportVersionsAsCsv(versions, projectKey);

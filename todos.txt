@@ -2,6 +2,7 @@ Consistency checks are based on the JSON response, not based on the implemented 
     FV != very first project version (?)
     #FV = 1
     #AV > 1
+    git commit related
 
 
 
