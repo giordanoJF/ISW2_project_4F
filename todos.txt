@@ -55,6 +55,6 @@ clone every day because new tickets could be possibly pushed.
 
 lots of rows have not FV but are actually status fixed. we cut them off.
 
-what can we do with more FV ? use the last is probably ok or mabe cut them off.
+what can we do with more FV ? use the last is probably ok or mabe cut them off. is possible that a ticket war reopened, so we take the last FV
 
 What is better between "lot of data with low accuracy" and "low data with lot of accuracy" ? This question will define what to cut from the rows and what to estimate.
