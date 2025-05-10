@@ -30,8 +30,31 @@ no versions names duplicates are supported.
 
 CsvExporter saves too much info.
 
-according to sort versions objects, and to OPERATE with them, we must use dates. (some version "names" are inconsistent with their release dates)
+according to OPERATE with versions, we must use dates. (some version "names" are inconsistent with their release dates) (in this code we are never sorting them, but they are sorted by date in the csv probably because JSON versions response are already sorted by date)
+for example AV (builded on versions field of JSON) sorts by ascending date order, instead of FV that sorts by descending order. we can not delete versions with inconsistent date and names like 4.3.0 and 4.2.3 of BOOKKEEPER
 
 what if no versions are found?
 
 we use different null checks on different JSON fields.
+
+we assume that all versions have a release date.
+
+OV is null if creation date is before first release.
+
+how OV is evaluated?
+
+released" field never used for evaluation.
+
+lots of ticket will be removed because FV = AV
+
+new push is equal to new version? what if 4.0.0 is AV and a push (still 4.0.0 not 4.0.1) solved the bug and now 4.0.0 is FV ?
+
+NOT ALL VERSION HAVE A RELEASE DATE, WE CUT THEM OFF.
+
+clone every day because new tickets could be possibly pushed.
+
+lots of rows have not FV but are actually status fixed. we cut them off.
+
+what can we do with more FV ? use the last is probably ok or mabe cut them off.
+
+What is better between "lot of data with low accuracy" and "low data with lot of accuracy" ? This question will define what to cut from the rows and what to estimate.
