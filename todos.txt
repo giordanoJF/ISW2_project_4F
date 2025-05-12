@@ -95,3 +95,7 @@ add logs according to show unexpected data, like an empty version list.
 warning, commented out code, refactor--> cleaning--> right logic?---> null checks --> understand all of the code--> remove all unnecessary print and logs
 
 why jiracontroller wants his private fields?
+
+maybe we can make jiraservice full static and not instanciate it inside the controller
+
+ticket evaluate also versions, so avoid double execution
