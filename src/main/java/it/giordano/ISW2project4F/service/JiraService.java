@@ -99,7 +99,7 @@ public class JiraService {
         int total;
 
         do {
-            String url = buildSearchUrl(encodedJql, startAt, MAX_RESULTS_PER_PAGE);
+            String url = buildSearchUrl(encodedJql, startAt);
             String jsonResponse = executeGetRequest(url);
 
             JSONObject responseObj = new JSONObject(jsonResponse);
@@ -142,10 +142,10 @@ public class JiraService {
     /**
      * Builds the search URL with pagination parameters.
      */
-    private String buildSearchUrl(String encodedJql, int startAt, int maxResults) {
+    private String buildSearchUrl(String encodedJql, int startAt) {
         return JIRA_BASE_URL + "/search?jql=" + encodedJql +
                 "&startAt=" + startAt +
-                "&maxResults=" + maxResults +
+                    "&maxResults=" + MAX_RESULTS_PER_PAGE +
                 "&fields=key,summary,description,created,resolutiondate,status,resolution,versions,fixVersions"; //maybe use constants?
     }
 
@@ -205,11 +205,11 @@ public class JiraService {
      */
     private void setTicketVersions(Ticket ticket, JSONObject fields, Map<String, Version> versionMap) {
         if (fields.has(FIELD_FIX_VERSIONS)) {
-            addVersionsToTicket(ticket, fields.getJSONArray(FIELD_FIX_VERSIONS), versionMap, ticket::addFixedVersion);
+            addVersionsToTicket(fields.getJSONArray(FIELD_FIX_VERSIONS), versionMap, ticket::addFixedVersion);
         }
 
         if (fields.has(FIELD_VERSIONS)) {
-            addVersionsToTicket(ticket, fields.getJSONArray(FIELD_VERSIONS), versionMap, ticket::addAffectedVersion);
+            addVersionsToTicket(fields.getJSONArray(FIELD_VERSIONS), versionMap, ticket::addAffectedVersion);
         }
     }
 
@@ -224,7 +224,7 @@ public class JiraService {
     /**
      * Adds versions from a JSON array to a ticket using the provided adder function.
      */
-    private void addVersionsToTicket(Ticket ticket, JSONArray versionsArray, Map<String, Version> versionMap, VersionAdder adder) {
+    private void addVersionsToTicket(JSONArray versionsArray, Map<String, Version> versionMap, VersionAdder adder) {
         for (int i = 0; i < versionsArray.length(); i++) {
             JSONObject versionJson = versionsArray.getJSONObject(i);
             String versionName = versionJson.getString(FIELD_NAME);
