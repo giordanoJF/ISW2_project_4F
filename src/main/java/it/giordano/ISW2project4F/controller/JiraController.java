@@ -3,111 +3,127 @@ package it.giordano.ISW2project4F.controller;
 import it.giordano.ISW2project4F.model.Ticket;
 import it.giordano.ISW2project4F.model.Version;
 import it.giordano.ISW2project4F.service.JiraService;
-import it.giordano.ISW2project4F.service.TicketCleaningService;
 import it.giordano.ISW2project4F.util.CsvExporter;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class JiraController {
+    private static final Logger LOGGER = Logger.getLogger(JiraController.class.getName());
     private final JiraService jiraService;
-    
+    private final CsvExporter csvExporter;
+
     public JiraController() {
-        this.jiraService = new JiraService();
+        this(new JiraService(), new CsvExporter());
     }
-    
+
+    // Constructor injection for better testability
+    public JiraController(JiraService jiraService, CsvExporter csvExporter) {
+        this.jiraService = jiraService;
+        this.csvExporter = csvExporter;
+    }
+
     /**
      * Retrieves all versions of a project.
-     * 
+     *
      * @param projectKey The key of the project
      * @return List of versions
      */
     public List<Version> getProjectVersions(String projectKey) {
-        try {
-            return jiraService.getProjectVersions(projectKey);
-        } catch (IOException e) {
-            System.err.println("Error retrieving project versions: " + e.getMessage());
-            e.printStackTrace();
-            return List.of();
-        }
+        return executeWithErrorHandling(() -> jiraService.getProjectVersions(projectKey),
+                "Error retrieving project versions for " + projectKey);
     }
-    
+
     /**
      * Retrieves tickets from a project.
-     * 
+     *
      * @param projectKey The key of the project
      * @return List of tickets
      */
-    public List<Ticket> retrieveTickets(String projectKey) {
-        try {
-            return jiraService.retrieveTickets(projectKey);
-        } catch (IOException e) {
-            System.err.println("Error retrieving tickets: " + e.getMessage());
-            e.printStackTrace();
-            return List.of();
-        }
+    public List<Ticket> getProjectTickets(String projectKey) {
+        return executeWithErrorHandling(() -> jiraService.retrieveTickets(projectKey),
+                "Error retrieving tickets for " + projectKey);
     }
-    
+
     /**
      * Exports versions to a CSV file.
-     * 
-     * @param versions List of versions to export
+     *
+     * @param versions   List of versions to export
      * @param projectKey The project key for naming the file
      * @return The path to the created file
      */
-    public String exportVersionsAsCsv(List<Version> versions, String projectKey) {
-        try {
-            return CsvExporter.exportVersionsAsCsv(versions, projectKey);
-        } catch (IOException e) {
-            System.err.println("Error exporting versions to CSV: " + e.getMessage());
-            e.printStackTrace();
-            return null;
-        }
+    public String exportVersionsToCsv(List<Version> versions, String projectKey) {
+        return executeWithErrorHandling(() -> csvExporter.exportVersionsAsCsv(versions, projectKey),
+                "Error exporting versions to CSV for " + projectKey);
     }
-    
+
     /**
      * Exports tickets to a CSV file.
-     * 
-     * @param tickets List of tickets to export
+     *
+     * @param tickets    List of tickets to export
      * @param projectKey The project key for naming the file
      * @return The path to the created file
      */
-    public String exportTicketsAsCsv(List<Ticket> tickets, String projectKey) {
-        try {
-            return CsvExporter.exportTicketsAsCsv(tickets, projectKey);
-        } catch (IOException e) {
-            System.err.println("Error exporting tickets to CSV: " + e.getMessage());
-            e.printStackTrace();
-            return null;
-        }
+    public String exportTicketsToCsv(List<Ticket> tickets, String projectKey) {
+        return executeWithErrorHandling(() -> csvExporter.exportTicketsAsCsv(tickets, projectKey),
+                "Error exporting tickets to CSV for " + projectKey);
     }
 
     /**
-     * Cleans the list of tickets based on specified validation rules.
+     * Executes a function with standardized error handling.
      *
-     * @param tickets List of tickets to clean
-     * @param projectKey The project key for exporting removed tickets
-     * @return List of valid tickets
+     * @param supplier   The function to execute
+     * @param errorMessage The error message to log if an exception occurs
+     * @param <T>        The return type of the function
+     * @return The result of the function or a default value if an exception occurs
      */
-    public List<Ticket> cleanTickets(List<Ticket> tickets, String projectKey) {
-        TicketCleaningService cleaningService = new TicketCleaningService();
-
-        // Clean tickets
-        List<Ticket> cleanedTickets = cleaningService.cleanTickets(tickets);
-
-        // Export removed tickets
-        List<TicketCleaningService.RemovedTicket> removedTickets = cleaningService.getRemovedTickets();
-        if (!removedTickets.isEmpty()) {
-            try {
-                String exportPath = CsvExporter.exportRemovedTicketsAsCsv(removedTickets, projectKey);
-                System.out.println("Removed tickets exported to: " + exportPath);
-            } catch (IOException e) {
-                System.err.println("Error exporting removed tickets to CSV: " + e.getMessage());
-                e.printStackTrace();
-            }
+    private <T> T executeWithErrorHandling(IOSupplier<T> supplier, String errorMessage) {
+        try {
+            return supplier.get();
+        } catch (IOException e) {
+            LOGGER.log(Level.SEVERE, errorMessage, e);
+            return getDefaultValue();
         }
-
-        return cleanedTickets;
     }
 
+    @SuppressWarnings("unchecked")
+    private <T> T getDefaultValue() {
+        return (T) (List.of());
+    }
+
+    // Functional interface for IO operations
+    @FunctionalInterface
+    private interface IOSupplier<T> {
+        T get() throws IOException;
+    }
 }
+
+//    /**
+//     * Cleans the list of tickets based on specified validation rules.
+//     *
+//     * @param tickets List of tickets to clean
+//     * @param projectKey The project key for exporting removed tickets
+//     * @return List of valid tickets
+//     */
+//    public List<Ticket> cleanTickets(List<Ticket> tickets, String projectKey) {
+//        TicketCleaningService cleaningService = new TicketCleaningService();
+//
+//        // Clean tickets
+//        List<Ticket> cleanedTickets = cleaningService.cleanTickets(tickets);
+//
+//        // Export removed tickets
+//        List<TicketCleaningService.RemovedTicket> removedTickets = cleaningService.getRemovedTickets();
+//        if (!removedTickets.isEmpty()) {
+//            try {
+//                String exportPath = CsvExporter.exportRemovedTicketsAsCsv(removedTickets, projectKey);
+//                System.out.println("Removed tickets exported to: " + exportPath);
+//            } catch (IOException e) {
+//                System.err.println("Error exporting removed tickets to CSV: " + e.getMessage());
+//                e.printStackTrace();
+//            }
+//        }
+//
+//        return cleanedTickets;
+//    }

@@ -21,18 +21,19 @@ public class Main {
         List<Version> versions = controller.getProjectVersions(projectKey);
 
         // Retrieve tickets
-        List<Ticket> tickets = controller.retrieveTickets(projectKey);
+        List<Ticket> tickets = controller.getProjectTickets(projectKey);
 
-        // Clean tickets
-        List<Ticket> cleanedTickets = controller.cleanTickets(tickets, projectKey);
+//        // Clean tickets
+//        List<Ticket> cleanedTickets = controller.cleanTickets(tickets, projectKey);
 
-        // Export data to CSV files
-        String versionsFile = controller.exportVersionsAsCsv(versions, projectKey);
+        // Export versions to CSV files
+        String versionsFile = controller.exportVersionsToCsv(versions, projectKey);
         if (versionsFile != null) {
             System.out.println("Versions exported to: " + versionsFile);
         }
 
-        String ticketsFile = controller.exportTicketsAsCsv(cleanedTickets, projectKey);
+        // Export tickets to CSV files
+        String ticketsFile = controller.exportTicketsToCsv(tickets, projectKey);
         if (ticketsFile != null) {
             System.out.println("Tickets exported to: " + ticketsFile);
         }

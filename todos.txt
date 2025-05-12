@@ -82,3 +82,16 @@ do not use stream.
 controller.cleanTickets(tickets, projectKey) should not take projectKey param
 
 service methods should not call other methods. for example retrieveTickets() should not call getProjectVersions() inside it, but the controller should call retrieveTickets(getProjectVersions())
+
+check url return if null or empty.
+
+check redundant parameters.
+
+do not take empty data. instead, we keep the default values.
+
+add logs according to show unexpected data, like an empty version list.
+
+
+warning, commented out code, refactor--> cleaning--> right logic?---> null checks --> understand all of the code--> remove all unnecessary print and logs
+
+why jiracontroller wants his private fields?

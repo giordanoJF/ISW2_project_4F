@@ -2,17 +2,20 @@ package it.giordano.ISW2project4F.util;
 
 import it.giordano.ISW2project4F.model.Ticket;
 import it.giordano.ISW2project4F.model.Version;
-import it.giordano.ISW2project4F.service.TicketCleaningService;
 
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class CsvExporter {
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd");
+    private static final String TARGET_DIRECTORY = "target";
+    private static final String CSV_EXTENSION = ".csv";
+    private static final String CSV_SEPARATOR = ",";
 
     /**
      * Exports versions to a CSV file in the target folder.
@@ -23,32 +26,22 @@ public class CsvExporter {
      * @throws IOException If an error occurs during file creation
      */
     public static String exportVersionsAsCsv(List<Version> versions, String projectKey) throws IOException {
-        String fileName = "target/" + projectKey + "_versions.csv";
-        File directory = new File("target");
-        if (!directory.exists()) {
-            directory.mkdirs();
-        }
+        String fileName = createFileName(projectKey, "versions");
+        ensureDirectoryExists();
 
-        try (FileWriter writer = new FileWriter(fileName)) {
+        try (CsvWriter writer = new CsvWriter(fileName)) {
             // Write header
-            writer.append("ID,Name,Released,Archived,ReleaseDate\n");
+            writer.writeLine("ID", "Name", "Released", "Archived", "ReleaseDate");
 
             // Write data
             for (Version version : versions) {
-                writer.append(version.getId())
-                        .append(",")
-                        .append(version.getName())
-                        .append(",")
-                        .append(String.valueOf(version.isReleased()))
-                        .append(",")
-                        .append(String.valueOf(version.isArchived()))
-                        .append(",");
-
-                if (version.getReleaseDate() != null) {
-                    writer.append(DATE_FORMAT.format(version.getReleaseDate()));
-                }
-
-                writer.append("\n");
+                writer.writeLine(
+                        version.getId(),
+                        version.getName(),
+                        String.valueOf(version.isReleased()),
+                        String.valueOf(version.isArchived()),
+                        formatDate(version.getReleaseDate())
+                );
             }
         }
 
@@ -64,71 +57,31 @@ public class CsvExporter {
      * @throws IOException If an error occurs during file creation
      */
     public static String exportTicketsAsCsv(List<Ticket> tickets, String projectKey) throws IOException {
-        String fileName = "target/" + projectKey + "_tickets.csv";
-        File directory = new File("target");
-        if (!directory.exists()) {
-            directory.mkdirs();
-        }
+        String fileName = createFileName(projectKey, "tickets");
+        ensureDirectoryExists();
 
-        try (FileWriter writer = new FileWriter(fileName)) {
+        try (CsvWriter writer = new CsvWriter(fileName)) {
             // Write header
-            writer.append("Key,Summary,Status,Resolution,CreatedDate,ResolutionDate,OpeningVersion,FixedVersions,InjectedVersion,AffectedVersions\n");
+            writer.writeLine(
+                    "Key", "Summary", "Status", "Resolution", "CreatedDate",
+                    "ResolutionDate", "OpeningVersion", "FixedVersions",
+                    "InjectedVersion", "AffectedVersions"
+            );
 
             // Write data
             for (Ticket ticket : tickets) {
-                writer.append(escapeCsvField(ticket.getKey()))
-                        .append(",")
-                        .append(escapeCsvField(ticket.getSummary()))
-                        .append(",")
-                        .append(escapeCsvField(ticket.getStatus()))
-                        .append(",")
-                        .append(escapeCsvField(ticket.getResolution()))
-                        .append(",");
-
-                // CreatedDate
-                if (ticket.getCreatedDate() != null) {
-                    writer.append(DATE_FORMAT.format(ticket.getCreatedDate()));
-                }
-                writer.append(",");
-
-                // ResolutionDate
-                if (ticket.getResolutionDate() != null) {
-                    writer.append(DATE_FORMAT.format(ticket.getResolutionDate()));
-                }
-                writer.append(",");
-
-                // OpeningVersion
-                if (ticket.getOpeningVersion() != null) {
-                    writer.append(escapeCsvField(ticket.getOpeningVersion().getName()));
-                }
-                writer.append(",");
-
-                // FixedVersions - Updated to handle multiple versions
-                if (ticket.getFixedVersions() != null && !ticket.getFixedVersions().isEmpty()) {
-                    List<String> versionNames = new ArrayList<>();
-                    for (Version version : ticket.getFixedVersions()) {
-                        versionNames.add(version.getName());
-                    }
-                    writer.append(escapeCsvField(String.join(";", versionNames)));
-                }
-                writer.append(",");
-
-                // InjectedVersion
-                if (ticket.getInjectedVersion() != null) {
-                    writer.append(escapeCsvField(ticket.getInjectedVersion().getName()));
-                }
-                writer.append(",");
-
-                // AffectedVersions
-                if (ticket.getAffectedVersions() != null && !ticket.getAffectedVersions().isEmpty()) {
-                    List<String> versionNames = new ArrayList<>();
-                    for (Version version : ticket.getAffectedVersions()) {
-                        versionNames.add(version.getName());
-                    }
-                    writer.append(escapeCsvField(String.join(";", versionNames)));
-                }
-
-                writer.append("\n");
+                writer.writeLine(
+                        ticket.getKey(),
+                        ticket.getSummary(),
+                        ticket.getStatus(),
+                        ticket.getResolution(),
+                        formatDate(ticket.getCreatedDate()),
+                        formatDate(ticket.getResolutionDate()),
+                        getVersionName(ticket.getOpeningVersion()),
+                        formatVersionsList(ticket.getFixedVersions()),
+                        getVersionName(ticket.getInjectedVersion()),
+                        formatVersionsList(ticket.getAffectedVersions())
+                );
             }
         }
 
@@ -136,53 +89,122 @@ public class CsvExporter {
     }
 
     /**
-     * Escape special characters in CSV fields.
+     * Creates a filename for the CSV export.
      */
-    private static String escapeCsvField(String field) {
-        if (field == null) {
-            return "";
-        }
-
-        // If the field contains comma, newline, or double quote, escape it
-        if (field.contains(",") || field.contains("\"") || field.contains("\n")) {
-            return "\"" + field.replace("\"", "\"\"") + "\"";
-        }
-
-        return field;
+    private static String createFileName(String projectKey, String suffix) {
+        return TARGET_DIRECTORY + File.separator + projectKey + "_" + suffix + CSV_EXTENSION;
     }
 
     /**
-     * Exports removed tickets to a CSV file in the target folder.
-     *
-     * @param removedTickets List of removed tickets with reasons
-     * @param projectKey The project key for naming the file
-     * @return The path to the created file
-     * @throws IOException If an error occurs during file creation
+     * Ensures the target directory exists.
      */
-    public static String exportRemovedTicketsAsCsv(List<TicketCleaningService.RemovedTicket> removedTickets, String projectKey) throws IOException {
-        String fileName = "target/" + projectKey + "_removed_tickets.csv";
-        File directory = new File("target");
+    private static void ensureDirectoryExists() {
+        File directory = new File(TARGET_DIRECTORY);
         if (!directory.exists()) {
             directory.mkdirs();
         }
-
-        try (FileWriter writer = new FileWriter(fileName)) {
-            // Write header
-            writer.append("Key,Summary,RemovalReason\n");
-
-            // Write data
-            for (TicketCleaningService.RemovedTicket removedTicket : removedTickets) {
-                Ticket ticket = removedTicket.getTicket();
-                writer.append(escapeCsvField(ticket.getKey()))
-                        .append(",")
-                        .append(escapeCsvField(ticket.getSummary()))
-                        .append(",")
-                        .append(escapeCsvField(removedTicket.getReason()))
-                        .append("\n");
-            }
-        }
-
-        return fileName;
     }
 
+    /**
+     * Formats a date according to the standard format or returns empty string.
+     */
+    private static String formatDate(Date date) {
+        return date != null ? DATE_FORMAT.format(date) : "";
+    }
+
+    /**
+     * Gets a version name safely.
+     */
+    private static String getVersionName(Version version) {
+        return version != null ? version.getName() : "";
+    }
+
+    /**
+     * Formats a list of versions as a semicolon-separated string.
+     */
+    private static String formatVersionsList(List<Version> versions) {
+        if (versions == null || versions.isEmpty()) {
+            return "";
+        }
+
+        return versions.stream()
+                .map(Version::getName)
+                .collect(Collectors.joining(";"));
+    }
+
+    /**
+     * Helper class to handle CSV writing operations.
+     */
+    private static class CsvWriter implements AutoCloseable {
+        private final FileWriter fileWriter;
+
+        public CsvWriter(String fileName) throws IOException {
+            this.fileWriter = new FileWriter(fileName);
+        }
+
+        public void writeLine(String... fields) throws IOException {
+            for (int i = 0; i < fields.length; i++) {
+                if (i > 0) {
+                    fileWriter.append(CSV_SEPARATOR);
+                }
+                fileWriter.append(escapeCsvField(fields[i]));
+            }
+            fileWriter.append("\n");
+        }
+
+        @Override
+        public void close() throws IOException {
+            fileWriter.close();
+        }
+
+        /**
+         * Escape special characters in CSV fields.
+         */
+        private String escapeCsvField(String field) {
+            if (field == null) {
+                return "";
+            }
+
+            // If the field contains comma, newline, or double quote, escape it
+            if (field.contains(",") || field.contains("\"") || field.contains("\n")) {
+                return "\"" + field.replace("\"", "\"\"") + "\"";
+            }
+
+            return field;
+        }
+    }
 }
+
+//    /**
+//     * Exports removed tickets to a CSV file in the target folder.
+//     *
+//     * @param removedTickets List of removed tickets with reasons
+//     * @param projectKey The project key for naming the file
+//     * @return The path to the created file
+//     * @throws IOException If an error occurs during file creation
+//     */
+//    public static String exportRemovedTicketsAsCsv(List<TicketCleaningService.RemovedTicket> removedTickets, String projectKey) throws IOException {
+//        String fileName = "target/" + projectKey + "_removed_tickets.csv";
+//        File directory = new File("target");
+//        if (!directory.exists()) {
+//            directory.mkdirs();
+//        }
+//
+//        try (FileWriter writer = new FileWriter(fileName)) {
+//            // Write header
+//            writer.append("Key,Summary,RemovalReason\n");
+//
+//            // Write data
+//            for (TicketCleaningService.RemovedTicket removedTicket : removedTickets) {
+//                Ticket ticket = removedTicket.getTicket();
+//                writer.append(escapeCsvField(ticket.getKey()))
+//                        .append(",")
+//                        .append(escapeCsvField(ticket.getSummary()))
+//                        .append(",")
+//                        .append(escapeCsvField(removedTicket.getReason()))
+//                        .append("\n");
+//            }
+//        }
+//
+//        return fileName;
+//    }
