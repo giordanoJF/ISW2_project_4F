@@ -13,16 +13,16 @@ import java.util.logging.Logger;
 public class JiraController {
     private static final Logger LOGGER = Logger.getLogger(JiraController.class.getName());
     private final JiraService jiraService;
-    private final CsvExporter csvExporter;
+    //exporter is a utility static class, so can't be instantiated here
+    //private final CsvExporter csvExporter;
 
     public JiraController() {
-        this(new JiraService(), new CsvExporter());
+        this(new JiraService());
     }
 
     // Constructor injection for better testability
-    public JiraController(JiraService jiraService, CsvExporter csvExporter) {
+    public JiraController(JiraService jiraService) {
         this.jiraService = jiraService;
-        this.csvExporter = csvExporter;
     }
 
     /**
@@ -55,7 +55,7 @@ public class JiraController {
      * @return The path to the created file
      */
     public String exportVersionsToCsv(List<Version> versions, String projectKey) {
-        return executeWithErrorHandling(() -> csvExporter.exportVersionsAsCsv(versions, projectKey),
+        return executeWithErrorHandling(() -> CsvExporter.exportVersionsAsCsv(versions, projectKey),
                 "Error exporting versions to CSV for " + projectKey);
     }
 
@@ -67,7 +67,7 @@ public class JiraController {
      * @return The path to the created file
      */
     public String exportTicketsToCsv(List<Ticket> tickets, String projectKey) {
-        return executeWithErrorHandling(() -> csvExporter.exportTicketsAsCsv(tickets, projectKey),
+        return executeWithErrorHandling(() -> CsvExporter.exportTicketsAsCsv(tickets, projectKey),
                 "Error exporting tickets to CSV for " + projectKey);
     }
 
