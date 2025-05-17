@@ -99,3 +99,13 @@ why jiracontroller wants his private fields?
 maybe we can make jiraservice full static and not instanciate it inside the controller
 
 ticket evaluate also versions, so avoid double execution
+
+could create exporter controller
+
+could use wrapper to avoid inconsistency between missing info
+
+some missin-info should interrupt the execution of the program, others should not.
+
+make a final check on all columns of the csv. remove those rows that have a particular column = missing info (like empty string, null, 0, empty list, or others...)             ->          so how is represented a missing info should not concern us particularly
+
+lot of refactoring could be done, but now is not the focus because this is still the first step of the whole project. we will se with sonarcloud or alternatives.

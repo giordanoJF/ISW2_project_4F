@@ -13,7 +13,7 @@ import java.util.stream.Collectors;
 
 public class CsvExporter {
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd");
-    private static final String TARGET_DIRECTORY = "target";
+    private static final String OUTPUT_DIR = "target";
     private static final String CSV_EXTENSION = ".csv";
     private static final String CSV_SEPARATOR = ",";
 
@@ -92,14 +92,14 @@ public class CsvExporter {
      * Creates a filename for the CSV export.
      */
     private static String createFileName(String projectKey, String suffix) {
-        return TARGET_DIRECTORY + File.separator + projectKey + "_" + suffix + CSV_EXTENSION;
+        return OUTPUT_DIR + File.separator + projectKey + "_" + suffix + CSV_EXTENSION;
     }
 
     /**
      * Ensures the target directory exists.
      */
     private static void ensureDirectoryExists() {
-        File directory = new File(TARGET_DIRECTORY);
+        File directory = new File(OUTPUT_DIR);
         if (!directory.exists()) {
             directory.mkdirs();
         }

@@ -49,7 +49,7 @@ public class JiraService {
      * @return List of versions for the project
      * @throws IOException If an error occurs during the HTTP request
      */
-    public List<Version> getProjectVersions(String projectKey) throws IOException {
+    public static List<Version> getProjectVersions(String projectKey) throws IOException {
         List<Version> versions = new ArrayList<>();
         String url = JIRA_BASE_URL + "/project/" + projectKey + "/versions";
         String jsonResponse = executeGetRequest(url);
@@ -66,19 +66,26 @@ public class JiraService {
     /**
      * Parses a JSON object into a Version entity.
      */
-    private Version parseVersionFromJson(JSONObject versionJson) {
+    private static Version parseVersionFromJson(JSONObject versionJson) {
         Version version = new Version();
-        version.setId(versionJson.getString(FIELD_ID));
-        version.setName(versionJson.getString(FIELD_NAME));
-        version.setReleased(versionJson.getBoolean(FIELD_RELEASED));
+        version.setId(versionJson.optString(FIELD_ID, ""));
+        version.setName(versionJson.optString(FIELD_NAME, ""));
+        version.setReleased(versionJson.optBoolean(FIELD_RELEASED, false));
         version.setArchived(versionJson.optBoolean(FIELD_ARCHIVED, false));
 
         if (versionJson.has(FIELD_RELEASE_DATE)) {
-            version.setReleaseDate(parseDate(versionJson.getString(FIELD_RELEASE_DATE), VERSION_DATE_FORMAT));
+            String dateStr = versionJson.optString(FIELD_RELEASE_DATE, null);
+            if (dateStr != null) {
+                version.setReleaseDate(parseDate(dateStr, VERSION_DATE_FORMAT));
+            }
+        }
+        else {
+            version.setReleaseDate(null);
         }
 
         return version;
     }
+
 
     /**
      * Retrieves bug tickets from Jira that are fixed and closed/resolved.
@@ -87,7 +94,7 @@ public class JiraService {
      * @return List of tickets meeting the criteria
      * @throws IOException If an error occurs during the HTTP request
      */
-    public List<Ticket> retrieveTickets(String projectKey) throws IOException {
+    public static List<Ticket> getProjectTickets(String projectKey) throws IOException {
         List<Ticket> tickets = new ArrayList<>();
         List<Version> versions = getProjectVersions(projectKey);
         Map<String, Version> versionMap = createVersionMap(versions);
@@ -121,7 +128,7 @@ public class JiraService {
     /**
      * Creates a map of version names to Version objects.
      */
-    private Map<String, Version> createVersionMap(List<Version> versions) {
+    private static Map<String, Version> createVersionMap(List<Version> versions) {
         Map<String, Version> versionMap = new HashMap<>();
         for (Version version : versions) {
             versionMap.put(version.getName(), version);
@@ -132,7 +139,7 @@ public class JiraService {
     /**
      * Builds the JQL query for retrieving bug tickets.
      */
-    private String buildJqlQuery(String projectKey) {
+    private static String buildJqlQuery(String projectKey) {
         return "project=" + projectKey +
                 " AND issuetype=Bug" +
                 " AND resolution=Fixed" +
@@ -142,7 +149,7 @@ public class JiraService {
     /**
      * Builds the search URL with pagination parameters.
      */
-    private String buildSearchUrl(String encodedJql, int startAt) {
+    private static String buildSearchUrl(String encodedJql, int startAt) {
         return JIRA_BASE_URL + "/search?jql=" + encodedJql +
                 "&startAt=" + startAt +
                     "&maxResults=" + MAX_RESULTS_PER_PAGE +
@@ -152,7 +159,7 @@ public class JiraService {
     /**
      * Parses a JSON issue into a Ticket object.
      */
-    private Ticket parseTicket(JSONObject issueJson, Map<String, Version> versionMap) {
+    private static Ticket parseTicket(JSONObject issueJson, Map<String, Version> versionMap) {
         Ticket ticket = new Ticket();
         ticket.setKey(issueJson.getString("key"));
         JSONObject fields = issueJson.getJSONObject("fields");
@@ -169,7 +176,7 @@ public class JiraService {
     /**
      * Sets the basic fields of a ticket.
      */
-    private void setBasicTicketFields(Ticket ticket, JSONObject fields) {
+    private static void setBasicTicketFields(Ticket ticket, JSONObject fields) {
         ticket.setSummary(fields.optString(FIELD_SUMMARY, null));
         ticket.setDescription(fields.optString(FIELD_DESCRIPTION, null));
     }
@@ -177,7 +184,7 @@ public class JiraService {
     /**
      * Sets the dates of a ticket.
      */
-    private void setTicketDates(Ticket ticket, JSONObject fields) {
+    private static void setTicketDates(Ticket ticket, JSONObject fields) {
         if (fields.has(FIELD_CREATED)) {
             ticket.setCreatedDate(parseDate(fields.getString(FIELD_CREATED), JIRA_DATE_FORMAT));
         }
@@ -190,7 +197,7 @@ public class JiraService {
     /**
      * Sets the status and resolution of a ticket.
      */
-    private void setTicketStatusAndResolution(Ticket ticket, JSONObject fields) {
+    private static void setTicketStatusAndResolution(Ticket ticket, JSONObject fields) {
         if (fields.has(FIELD_STATUS) && !fields.isNull(FIELD_STATUS)) {
             ticket.setStatus(fields.getJSONObject(FIELD_STATUS).getString(FIELD_NAME));
         }
@@ -203,7 +210,7 @@ public class JiraService {
     /**
      * Sets the fixed and affected versions of a ticket.
      */
-    private void setTicketVersions(Ticket ticket, JSONObject fields, Map<String, Version> versionMap) {
+    private static void setTicketVersions(Ticket ticket, JSONObject fields, Map<String, Version> versionMap) {
         if (fields.has(FIELD_FIX_VERSIONS)) {
             addVersionsToTicket(fields.getJSONArray(FIELD_FIX_VERSIONS), versionMap, ticket::addFixedVersion);
         }
@@ -224,7 +231,7 @@ public class JiraService {
     /**
      * Adds versions from a JSON array to a ticket using the provided adder function.
      */
-    private void addVersionsToTicket(JSONArray versionsArray, Map<String, Version> versionMap, VersionAdder adder) {
+    private static void addVersionsToTicket(JSONArray versionsArray, Map<String, Version> versionMap, VersionAdder adder) {
         for (int i = 0; i < versionsArray.length(); i++) {
             JSONObject versionJson = versionsArray.getJSONObject(i);
             String versionName = versionJson.getString(FIELD_NAME);
@@ -237,7 +244,7 @@ public class JiraService {
     /**
      * Sets the derived versions (injected version and opening version) of a ticket.
      */
-    private void setDerivedVersions(Ticket ticket, Map<String, Version> versionMap) {
+    private static void setDerivedVersions(Ticket ticket, Map<String, Version> versionMap) {
         setInjectedVersion(ticket);
         setOpeningVersion(ticket, versionMap);
     }
@@ -245,7 +252,7 @@ public class JiraService {
     /**
      * Sets the injected version of a ticket as the oldest affected version.
      */
-    private void setInjectedVersion(Ticket ticket) {
+    private static void setInjectedVersion(Ticket ticket) {
         List<Version> affectedVersions = ticket.getAffectedVersions();
         if (affectedVersions != null && !affectedVersions.isEmpty()) {
             Version oldestVersion = findOldestVersion(affectedVersions);
@@ -256,7 +263,7 @@ public class JiraService {
     /**
      * Finds the oldest version from a list of versions.
      */
-    private Version findOldestVersion(List<Version> versions) {
+    private static Version findOldestVersion(List<Version> versions) {
         Version oldestVersion = versions.getFirst();
         for (Version version : versions) {
             if (version.getReleaseDate() != null &&
@@ -271,7 +278,7 @@ public class JiraService {
     /**
      * Sets the opening version of a ticket.
      */
-    private void setOpeningVersion(Ticket ticket, Map<String, Version> versionMap) {
+    private static void setOpeningVersion(Ticket ticket, Map<String, Version> versionMap) {
         if (ticket.getCreatedDate() != null) {
             Version latestBeforeCreation = findLatestVersionBeforeDate(versionMap.values(), ticket.getCreatedDate());
             ticket.setOpeningVersion(latestBeforeCreation);
@@ -281,7 +288,7 @@ public class JiraService {
     /**
      * Finds the latest version released before a given date.
      */
-    private Version findLatestVersionBeforeDate(Collection<Version> versions, Date date) {
+    private static Version findLatestVersionBeforeDate(Collection<Version> versions, Date date) {
         Version latestVersion = null;
         for (Version version : versions) {
             if (version.getReleaseDate() != null && !version.getReleaseDate().after(date)) {
@@ -296,7 +303,7 @@ public class JiraService {
     /**
      * Parses a date string using the provided date format.
      */
-    private Date parseDate(String dateString, SimpleDateFormat dateFormat) {
+    private static Date parseDate(String dateString, SimpleDateFormat dateFormat) {
         try {
             return dateFormat.parse(dateString);
         } catch (ParseException e) {
@@ -308,7 +315,7 @@ public class JiraService {
     /**
      * Executes a GET request to the specified URL.
      */
-    private String executeGetRequest(String url) throws IOException {
+    private static String executeGetRequest(String url) throws IOException {
         try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
             HttpGet httpGet = new HttpGet(url);
             try (CloseableHttpResponse response = httpClient.execute(httpGet)) {

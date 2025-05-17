@@ -12,17 +12,8 @@ import java.util.logging.Logger;
 
 public class JiraController {
     private static final Logger LOGGER = Logger.getLogger(JiraController.class.getName());
-    private final JiraService jiraService;
-    //exporter is a utility static class, so can't be instantiated here
-    //private final CsvExporter csvExporter;
 
     public JiraController() {
-        this(new JiraService());
-    }
-
-    // Constructor injection for better testability
-    public JiraController(JiraService jiraService) {
-        this.jiraService = jiraService;
     }
 
     /**
@@ -32,7 +23,7 @@ public class JiraController {
      * @return List of versions
      */
     public List<Version> getProjectVersions(String projectKey) {
-        return executeWithErrorHandling(() -> jiraService.getProjectVersions(projectKey),
+        return executeWithErrorHandling(() -> JiraService.getProjectVersions(projectKey),
                 "Error retrieving project versions for " + projectKey);
     }
 
@@ -43,7 +34,7 @@ public class JiraController {
      * @return List of tickets
      */
     public List<Ticket> getProjectTickets(String projectKey) {
-        return executeWithErrorHandling(() -> jiraService.retrieveTickets(projectKey),
+        return executeWithErrorHandling(() -> JiraService.getProjectTickets(projectKey),
                 "Error retrieving tickets for " + projectKey);
     }
 
@@ -73,24 +64,22 @@ public class JiraController {
 
     /**
      * Executes a function with standardized error handling.
+     * In case of error, logs the exception and terminates the program.
      *
-     * @param supplier   The function to execute
+     * @param supplier     The function to execute
      * @param errorMessage The error message to log if an exception occurs
-     * @param <T>        The return type of the function
-     * @return The result of the function or a default value if an exception occurs
+     * @param <T>          The return type of the function
+     * @return The result of the function
      */
     private <T> T executeWithErrorHandling(IOSupplier<T> supplier, String errorMessage) {
         try {
             return supplier.get();
         } catch (IOException e) {
             LOGGER.log(Level.SEVERE, errorMessage, e);
-            return getDefaultValue();
+            System.err.println("Critical error: " + errorMessage);
+            System.exit(1);
+            return null;
         }
-    }
-
-    @SuppressWarnings("unchecked")
-    private <T> T getDefaultValue() {
-        return (T) (List.of());
     }
 
     // Functional interface for IO operations
