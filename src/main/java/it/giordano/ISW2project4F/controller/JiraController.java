@@ -45,10 +45,9 @@ public class JiraController {
      *
      * @param versions   List of versions to export
      * @param projectKey The project key for naming the file
-     * @return The path to the created file
      */
-    public String exportVersionsToCsv(List<Version> versions, String projectKey) {
-        return executeWithErrorHandling(() -> CsvExporter.exportVersionsAsCsv(versions, projectKey),
+    public void exportVersionsToCsv(List<Version> versions, String projectKey) {
+        executeWithErrorHandling(() -> CsvExporter.exportVersionsAsCsv(versions, projectKey),
                 "Error exporting versions to CSV for " + projectKey);
     }
 
@@ -57,10 +56,9 @@ public class JiraController {
      *
      * @param tickets    List of tickets to export
      * @param projectKey The project key for naming the file
-     * @return The path to the created file
      */
-    public String exportTicketsToCsv(List<Ticket> tickets, String projectKey) {
-        return executeWithErrorHandling(() -> CsvExporter.exportTicketsAsCsv(tickets, projectKey),
+    public void exportTicketsToCsv(List<Ticket> tickets, String projectKey) {
+        executeWithErrorHandling(() -> CsvExporter.exportTicketsAsCsv(tickets, projectKey),
                 "Error exporting tickets to CSV for " + projectKey);
     }
 

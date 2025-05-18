@@ -9,9 +9,11 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 public class CsvExporter {
+    private static final Logger LOGGER = Logger.getLogger(CsvExporter.class.getName());
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd");
     private static final String OUTPUT_DIR = "target";
     private static final String CSV_EXTENSION = ".csv";
@@ -45,6 +47,7 @@ public class CsvExporter {
             }
         }
 
+        LOGGER.info("Exported versions CSV file: " + fileName);
         return fileName;
     }
 
@@ -85,6 +88,7 @@ public class CsvExporter {
             }
         }
 
+        LOGGER.info("Exported tickets CSV file: " + fileName);
         return fileName;
     }
 
