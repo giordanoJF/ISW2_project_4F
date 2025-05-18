@@ -53,7 +53,7 @@ public class JiraService {
      * @return List of versions for the project
      * @throws IOException If an error occurs during the HTTP request
      */
-    public static List<Version> getProjectVersions(String projectKey) throws IOException {
+    public static List<Version> getProjectVersions(String projectKey) throws IOException, ParseException {
         List<Version> versions = new ArrayList<>();
         String url = JIRA_BASE_URL + "/project/" + projectKey + "/versions";
         String jsonResponse = executeGetRequest(url);
@@ -72,7 +72,7 @@ public class JiraService {
     /**
      * Parses a JSON object into a Version entity.
      */
-    private static Version parseVersionFromJson(JSONObject versionJson) {
+    private static Version parseVersionFromJson(JSONObject versionJson) throws ParseException {
         Version version = new Version();
 
         version.setId(versionJson.optString(FIELD_ID));
@@ -97,7 +97,7 @@ public class JiraService {
      * @return List of tickets meeting the criteria
      * @throws IOException If an error occurs during the HTTP request
      */
-    public static List<Ticket> getProjectTickets(String projectKey) throws IOException {
+    public static List<Ticket> getProjectTickets(String projectKey) throws IOException, ParseException {
         List<Ticket> tickets = new ArrayList<>();
         List<Version> versions = getProjectVersions(projectKey);
         Map<String, Version> versionMap = createVersionMap(versions);
@@ -153,7 +153,7 @@ public class JiraService {
     /**
      * Parses a JSON issue into a Ticket object.
      */
-    private static Ticket parseTicket(JSONObject issueJson, Map<String, Version> versionMap) {
+    private static Ticket parseTicket(JSONObject issueJson, Map<String, Version> versionMap) throws ParseException {
         Ticket ticket = new Ticket();
         ticket.setKey(issueJson.optString(FIELD_KEY));
         JSONObject fields = issueJson.optJSONObject(FIELDS);
@@ -264,15 +264,15 @@ public class JiraService {
 
     /**
      * Parses a date string using the provided date format.
+     * @throws ParseException if the date string cannot be parsed
      */
-    private static Date parseDate(String dateString, SimpleDateFormat dateFormat) {
-        try {
-            return dateFormat.parse(dateString);
-        } catch (ParseException e) {
-            LOGGER.log(Level.WARNING, "Failed to parse date: " + dateString, e);
+    private static Date parseDate(String dateString, SimpleDateFormat dateFormat) throws ParseException {
+        if (dateString == null || dateString.isEmpty()) {
             return null;
         }
+        return dateFormat.parse(dateString);
     }
+
 
     /**
      * Executes a GET request to the specified URL.

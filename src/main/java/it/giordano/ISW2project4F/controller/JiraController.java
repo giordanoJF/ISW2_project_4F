@@ -82,7 +82,14 @@ public class JiraController {
             System.err.println("Critical error: " + errorMessage + ": " + e.getMessage());
             System.exit(1);
             return null;
-        } catch (JSONException e) {
+        }
+        catch (ParseException e) {
+            // Date parsing errors
+            LOGGER.log(Level.SEVERE, errorMessage + ": Date format error", e);
+            System.err.println("Error parsing date: " + errorMessage + ": " + e.getMessage());
+            return null;
+        }
+        catch (JSONException e) {
             // Data format errors are critical - log and terminate
             LOGGER.log(Level.SEVERE, errorMessage + ": Data format error", e);
             System.err.println("Critical error: " + errorMessage + ": " + e.getMessage());
