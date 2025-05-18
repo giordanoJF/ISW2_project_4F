@@ -109,3 +109,15 @@ some missin-info should interrupt the execution of the program, others should no
 make a final check on all columns of the csv. remove those rows that have a particular column = missing info (like empty string, null, 0, empty list, or others...)             ->          so how is represented a missing info should not concern us particularly
 
 lot of refactoring could be done, but now is not the focus because this is still the first step of the whole project. we will se with sonarcloud or alternatives.
+
+start sonarqube
+
+checking if json are not missing, but if "" is found it is saved. then we will normalize the csv missing info.
+
+whitespaces as names not checked.
+
+modify which info to retrieve.
+
+normalize csv. tickets are not normalized reguarding missing info.
+
+split the file logic.

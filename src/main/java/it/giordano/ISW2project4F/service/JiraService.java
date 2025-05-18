@@ -1,4 +1,3 @@
-
 package it.giordano.ISW2project4F.service;
 
 import it.giordano.ISW2project4F.model.Ticket;
@@ -31,16 +30,21 @@ public class JiraService {
     private static final String FIELD_RELEASED = "released";
     private static final String FIELD_ARCHIVED = "archived";
     private static final String FIELD_RELEASE_DATE = "releaseDate";
-    private static final String FIELD_CREATED = "created";
+
+    private static final String FIELD_KEY = "key";
+    private static final String FIELD_SUMMARY = "summary";
+    private static final String FIELD_DESCRIPTION = "description";
+    private static final String FIELD_CREATED_DATE = "created";
     private static final String FIELD_RESOLUTION_DATE = "resolutiondate";
     private static final String FIELD_STATUS = "status";
     private static final String FIELD_RESOLUTION = "resolution";
-    private static final String FIELD_SUMMARY = "summary";
-    private static final String FIELD_DESCRIPTION = "description";
     private static final String FIELD_FIX_VERSIONS = "fixVersions";
-    private static final String FIELD_VERSIONS = "versions";
+    private static final String FIELD_VERSIONS = "versions"; //AV
 
     private static final int MAX_RESULTS_PER_PAGE = 100;
+    private static final String TOTAL = "total";
+    private static final String ISSUES = "issues";
+    private static final String FIELDS = "fields";
 
     /**
      * Retrieves all versions of a project from Jira.
@@ -56,8 +60,10 @@ public class JiraService {
 
         JSONArray versionArray = new JSONArray(jsonResponse);
         for (int i = 0; i < versionArray.length(); i++) {
-            JSONObject versionJson = versionArray.getJSONObject(i);
-            versions.add(parseVersionFromJson(versionJson));
+            JSONObject versionJson = versionArray.optJSONObject(i);
+            if (versionJson != null) {
+                versions.add(parseVersionFromJson(versionJson));
+            }
         }
 
         return versions;
@@ -68,25 +74,22 @@ public class JiraService {
      */
     private static Version parseVersionFromJson(JSONObject versionJson) {
         Version version = new Version();
-        version.setId(versionJson.optString(FIELD_ID, ""));
-        version.setName(versionJson.optString(FIELD_NAME, ""));
-        version.setReleased(versionJson.optBoolean(FIELD_RELEASED, false));
-        version.setArchived(versionJson.optBoolean(FIELD_ARCHIVED, false));
 
-        if (versionJson.has(FIELD_RELEASE_DATE)) {
-            String dateStr = versionJson.optString(FIELD_RELEASE_DATE, null);
-            if (dateStr != null) {
-                version.setReleaseDate(parseDate(dateStr, VERSION_DATE_FORMAT));
-            }
-        }
-        else {
+        version.setId(versionJson.optString(FIELD_ID));
+        version.setName(versionJson.optString(FIELD_NAME));
+        version.setReleased(versionJson.optBoolean(FIELD_RELEASED));
+        version.setArchived(versionJson.optBoolean(FIELD_ARCHIVED));
+
+        String dateStr = versionJson.optString(FIELD_RELEASE_DATE);
+        if (dateStr != null && !dateStr.isEmpty()) {
+            version.setReleaseDate(parseDate(dateStr, VERSION_DATE_FORMAT));
+        } else {
             version.setReleaseDate(null);
         }
 
         return version;
     }
-
-
+    
     /**
      * Retrieves bug tickets from Jira that are fixed and closed/resolved.
      *
@@ -99,24 +102,33 @@ public class JiraService {
         List<Version> versions = getProjectVersions(projectKey);
         Map<String, Version> versionMap = createVersionMap(versions);
 
-        String jql = buildJqlQuery(projectKey);
+        String jql = "project=" + projectKey +
+                " AND issuetype=Bug" +
+                " AND resolution=Fixed" +
+                " AND status in (Closed, Resolved)";
         String encodedJql = java.net.URLEncoder.encode(jql, StandardCharsets.UTF_8);
 
         int startAt = 0;
         int total;
 
         do {
-            String url = buildSearchUrl(encodedJql, startAt);
+            String url = JIRA_BASE_URL + "/search?jql=" + encodedJql +
+                "&startAt=" + startAt +
+                "&maxResults=" + MAX_RESULTS_PER_PAGE +
+                "&fields=key,summary,description,created,resolutiondate,status,resolution,versions,fixVersions";
+            
             String jsonResponse = executeGetRequest(url);
-
             JSONObject responseObj = new JSONObject(jsonResponse);
-            total = responseObj.getInt("total");
-            JSONArray issuesArray = responseObj.getJSONArray("issues");
+            total = responseObj.getInt(TOTAL);
+            JSONArray issuesArray = responseObj.getJSONArray(ISSUES);
 
-            for (int i = 0; i < issuesArray.length(); i++) {
-                JSONObject issueJson = issuesArray.getJSONObject(i);
-                Ticket ticket = parseTicket(issueJson, versionMap);
-                tickets.add(ticket);
+            if (issuesArray != null) {
+                for (int i = 0; i < issuesArray.length(); i++) {
+                    JSONObject issueJson = issuesArray.optJSONObject(i);
+                    if (issueJson != null) {
+                        tickets.add(parseTicket(issueJson, versionMap));
+                    }
+                }
             }
 
             startAt += MAX_RESULTS_PER_PAGE;
@@ -137,106 +149,81 @@ public class JiraService {
     }
 
     /**
-     * Builds the JQL query for retrieving bug tickets.
-     */
-    private static String buildJqlQuery(String projectKey) {
-        return "project=" + projectKey +
-                " AND issuetype=Bug" +
-                " AND resolution=Fixed" +
-                " AND status in (Closed, Resolved)";
-    }
-
-    /**
-     * Builds the search URL with pagination parameters.
-     */
-    private static String buildSearchUrl(String encodedJql, int startAt) {
-        return JIRA_BASE_URL + "/search?jql=" + encodedJql +
-                "&startAt=" + startAt +
-                    "&maxResults=" + MAX_RESULTS_PER_PAGE +
-                "&fields=key,summary,description,created,resolutiondate,status,resolution,versions,fixVersions"; //maybe use constants?
-    }
-
-    /**
      * Parses a JSON issue into a Ticket object.
      */
     private static Ticket parseTicket(JSONObject issueJson, Map<String, Version> versionMap) {
         Ticket ticket = new Ticket();
-        ticket.setKey(issueJson.getString("key"));
-        JSONObject fields = issueJson.getJSONObject("fields");
+        ticket.setKey(issueJson.optString(FIELD_KEY));
+        JSONObject fields = issueJson.optJSONObject(FIELDS);
+        
+        if (fields == null) {
+            return ticket;
+        }
 
-        setBasicTicketFields(ticket, fields);
-        setTicketDates(ticket, fields);
-        setTicketStatusAndResolution(ticket, fields);
+        // Set basic fields
+        ticket.setSummary(fields.optString(FIELD_SUMMARY));
+        ticket.setDescription(fields.optString(FIELD_DESCRIPTION));
+
+        // Set dates
+        String createdDateStr = fields.optString(FIELD_CREATED_DATE);
+        if (createdDateStr != null && !createdDateStr.isEmpty()) {
+            ticket.setCreatedDate(parseDate(createdDateStr, JIRA_DATE_FORMAT));
+        }
+        
+        String resolutionDateStr = fields.optString(FIELD_RESOLUTION_DATE);
+        if (resolutionDateStr != null && !resolutionDateStr.isEmpty()) {
+            ticket.setResolutionDate(parseDate(resolutionDateStr, JIRA_DATE_FORMAT));
+        }
+
+        // Set status and resolution
+        JSONObject statusObj = fields.optJSONObject(FIELD_STATUS);
+        if (statusObj != null) {
+            ticket.setStatus(statusObj.optString(FIELD_NAME));
+        }
+        
+        JSONObject resolutionObj = fields.optJSONObject(FIELD_RESOLUTION);
+        if (resolutionObj != null) {
+            ticket.setResolution(resolutionObj.optString(FIELD_NAME));
+        }
+
+        // Set versions
         setTicketVersions(ticket, fields, versionMap);
+        
+        // Set derived versions
         setDerivedVersions(ticket, versionMap);
 
         return ticket;
     }
 
     /**
-     * Sets the basic fields of a ticket.
-     */
-    private static void setBasicTicketFields(Ticket ticket, JSONObject fields) {
-        ticket.setSummary(fields.optString(FIELD_SUMMARY, null));
-        ticket.setDescription(fields.optString(FIELD_DESCRIPTION, null));
-    }
-
-    /**
-     * Sets the dates of a ticket.
-     */
-    private static void setTicketDates(Ticket ticket, JSONObject fields) {
-        if (fields.has(FIELD_CREATED)) {
-            ticket.setCreatedDate(parseDate(fields.getString(FIELD_CREATED), JIRA_DATE_FORMAT));
-        }
-
-        if (fields.has(FIELD_RESOLUTION_DATE) && !fields.isNull(FIELD_RESOLUTION_DATE)) {
-            ticket.setResolutionDate(parseDate(fields.getString(FIELD_RESOLUTION_DATE), JIRA_DATE_FORMAT));
-        }
-    }
-
-    /**
-     * Sets the status and resolution of a ticket.
-     */
-    private static void setTicketStatusAndResolution(Ticket ticket, JSONObject fields) {
-        if (fields.has(FIELD_STATUS) && !fields.isNull(FIELD_STATUS)) {
-            ticket.setStatus(fields.getJSONObject(FIELD_STATUS).getString(FIELD_NAME));
-        }
-
-        if (fields.has(FIELD_RESOLUTION) && !fields.isNull(FIELD_RESOLUTION)) {
-            ticket.setResolution(fields.getJSONObject(FIELD_RESOLUTION).getString(FIELD_NAME));
-        }
-    }
-
-    /**
      * Sets the fixed and affected versions of a ticket.
      */
     private static void setTicketVersions(Ticket ticket, JSONObject fields, Map<String, Version> versionMap) {
-        if (fields.has(FIELD_FIX_VERSIONS)) {
-            addVersionsToTicket(fields.getJSONArray(FIELD_FIX_VERSIONS), versionMap, ticket::addFixedVersion);
+        // Add fixed versions
+        JSONArray fixVersions = fields.optJSONArray(FIELD_FIX_VERSIONS);
+        if (fixVersions != null) {
+            for (int i = 0; i < fixVersions.length(); i++) {
+                JSONObject versionJson = fixVersions.optJSONObject(i);
+                if (versionJson != null) {
+                    String versionName = versionJson.optString(FIELD_NAME);
+                    if (!versionName.isEmpty() && versionMap.containsKey(versionName)) {
+                        ticket.addFixedVersion(versionMap.get(versionName));
+                    }
+                }
+            }
         }
 
-        if (fields.has(FIELD_VERSIONS)) {
-            addVersionsToTicket(fields.getJSONArray(FIELD_VERSIONS), versionMap, ticket::addAffectedVersion);
-        }
-    }
-
-    /**
-     * Functional interface for adding versions to a ticket.
-     */
-    @FunctionalInterface
-    private interface VersionAdder {
-        void add(Version version);
-    }
-
-    /**
-     * Adds versions from a JSON array to a ticket using the provided adder function.
-     */
-    private static void addVersionsToTicket(JSONArray versionsArray, Map<String, Version> versionMap, VersionAdder adder) {
-        for (int i = 0; i < versionsArray.length(); i++) {
-            JSONObject versionJson = versionsArray.getJSONObject(i);
-            String versionName = versionJson.getString(FIELD_NAME);
-            if (versionMap.containsKey(versionName)) {
-                adder.add(versionMap.get(versionName));
+        // Add affected versions
+        JSONArray versionsArray = fields.optJSONArray(FIELD_VERSIONS);
+        if (versionsArray != null) {
+            for (int i = 0; i < versionsArray.length(); i++) {
+                JSONObject versionJson = versionsArray.optJSONObject(i);
+                if (versionJson != null) {
+                    String versionName = versionJson.optString(FIELD_NAME);
+                    if (!versionName.isEmpty() && versionMap.containsKey(versionName)) {
+                        ticket.addAffectedVersion(versionMap.get(versionName));
+                    }
+                }
             }
         }
     }
@@ -245,59 +232,32 @@ public class JiraService {
      * Sets the derived versions (injected version and opening version) of a ticket.
      */
     private static void setDerivedVersions(Ticket ticket, Map<String, Version> versionMap) {
-        setInjectedVersion(ticket);
-        setOpeningVersion(ticket, versionMap);
-    }
-
-    /**
-     * Sets the injected version of a ticket as the oldest affected version.
-     */
-    private static void setInjectedVersion(Ticket ticket) {
+        // Set injected version (oldest affected version)
         List<Version> affectedVersions = ticket.getAffectedVersions();
         if (affectedVersions != null && !affectedVersions.isEmpty()) {
-            Version oldestVersion = findOldestVersion(affectedVersions);
-            ticket.setInjectedVersion(oldestVersion);
-        }
-    }
-
-    /**
-     * Finds the oldest version from a list of versions.
-     */
-    private static Version findOldestVersion(List<Version> versions) {
-        Version oldestVersion = versions.getFirst();
-        for (Version version : versions) {
-            if (version.getReleaseDate() != null &&
-                    (oldestVersion.getReleaseDate() == null ||
-                            version.getReleaseDate().before(oldestVersion.getReleaseDate()))) {
-                oldestVersion = version;
-            }
-        }
-        return oldestVersion;
-    }
-
-    /**
-     * Sets the opening version of a ticket.
-     */
-    private static void setOpeningVersion(Ticket ticket, Map<String, Version> versionMap) {
-        if (ticket.getCreatedDate() != null) {
-            Version latestBeforeCreation = findLatestVersionBeforeDate(versionMap.values(), ticket.getCreatedDate());
-            ticket.setOpeningVersion(latestBeforeCreation);
-        }
-    }
-
-    /**
-     * Finds the latest version released before a given date.
-     */
-    private static Version findLatestVersionBeforeDate(Collection<Version> versions, Date date) {
-        Version latestVersion = null;
-        for (Version version : versions) {
-            if (version.getReleaseDate() != null && !version.getReleaseDate().after(date)) {
-                if (latestVersion == null || version.getReleaseDate().after(latestVersion.getReleaseDate())) {
-                    latestVersion = version;
+            Version oldestVersion = affectedVersions.getFirst();
+            for (Version version : affectedVersions) {
+                if (version.getReleaseDate() != null &&
+                        (oldestVersion.getReleaseDate() == null ||
+                                version.getReleaseDate().before(oldestVersion.getReleaseDate()))) {
+                    oldestVersion = version;
                 }
             }
+            ticket.setInjectedVersion(oldestVersion);
         }
-        return latestVersion;
+
+        // Set opening version (latest version released before ticket creation)
+        if (ticket.getCreatedDate() != null) {
+            Version latestVersion = null;
+            for (Version version : versionMap.values()) {
+                if (version.getReleaseDate() != null && !version.getReleaseDate().after(ticket.getCreatedDate())) {
+                    if (latestVersion == null || version.getReleaseDate().after(latestVersion.getReleaseDate())) {
+                        latestVersion = version;
+                    }
+                }
+            }
+            ticket.setOpeningVersion(latestVersion);
+        }
     }
 
     /**

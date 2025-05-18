@@ -4,8 +4,10 @@ import it.giordano.ISW2project4F.model.Ticket;
 import it.giordano.ISW2project4F.model.Version;
 import it.giordano.ISW2project4F.service.JiraService;
 import it.giordano.ISW2project4F.util.CsvExporter;
+import org.json.JSONException;
 
 import java.io.IOException;
+import java.text.ParseException;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -75,8 +77,22 @@ public class JiraController {
         try {
             return supplier.get();
         } catch (IOException e) {
-            LOGGER.log(Level.SEVERE, errorMessage, e);
-            System.err.println("Critical error: " + errorMessage);
+            // I/O errors are critical - log and terminate
+            LOGGER.log(Level.SEVERE, errorMessage + ": I/O Error", e);
+            System.err.println("Critical error: " + errorMessage + ": " + e.getMessage());
+            System.exit(1);
+            return null;
+        } catch (JSONException e) {
+            // Data format errors are critical - log and terminate
+            LOGGER.log(Level.SEVERE, errorMessage + ": Data format error", e);
+            System.err.println("Critical error: " + errorMessage + ": " + e.getMessage());
+            System.exit(1);
+            return null;
+        }
+        catch (Exception e) {
+            // Unexpected errors are critical - log and terminate
+            LOGGER.log(Level.SEVERE, errorMessage + ": Unexpected error", e);
+            System.err.println("Critical error: " + errorMessage + ": " + e.getMessage());
             System.exit(1);
             return null;
         }
@@ -85,34 +101,6 @@ public class JiraController {
     // Functional interface for IO operations
     @FunctionalInterface
     private interface IOSupplier<T> {
-        T get() throws IOException;
+        T get() throws Exception;
     }
 }
-
-//    /**
-//     * Cleans the list of tickets based on specified validation rules.
-//     *
-//     * @param tickets List of tickets to clean
-//     * @param projectKey The project key for exporting removed tickets
-//     * @return List of valid tickets
-//     */
-//    public List<Ticket> cleanTickets(List<Ticket> tickets, String projectKey) {
-//        TicketCleaningService cleaningService = new TicketCleaningService();
-//
-//        // Clean tickets
-//        List<Ticket> cleanedTickets = cleaningService.cleanTickets(tickets);
-//
-//        // Export removed tickets
-//        List<TicketCleaningService.RemovedTicket> removedTickets = cleaningService.getRemovedTickets();
-//        if (!removedTickets.isEmpty()) {
-//            try {
-//                String exportPath = CsvExporter.exportRemovedTicketsAsCsv(removedTickets, projectKey);
-//                System.out.println("Removed tickets exported to: " + exportPath);
-//            } catch (IOException e) {
-//                System.err.println("Error exporting removed tickets to CSV: " + e.getMessage());
-//                e.printStackTrace();
-//            }
-//        }
-//
-//        return cleanedTickets;
-//    }

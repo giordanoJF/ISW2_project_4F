@@ -41,3 +41,4 @@ build/
 .idea
 .idea/
 .idea/*
+/.aiignore

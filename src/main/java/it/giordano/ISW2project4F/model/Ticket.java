@@ -19,9 +19,6 @@ public class Ticket {
 
     // Constructor
     public Ticket() {
-        //avoiding null pointer exception
-        this.fixedVersions = new ArrayList<>();
-        this.affectedVersions = new ArrayList<>();
     }
 
     // Getters and Setters
@@ -93,10 +90,6 @@ public class Ticket {
         return fixedVersions;
     }
 
-    public void setFixedVersions(List<Version> fixedVersions) {
-        this.fixedVersions = fixedVersions;
-    }
-
     public void addFixedVersion(Version version) {
         if (this.fixedVersions == null) {
             this.fixedVersions = new ArrayList<>();
@@ -106,10 +99,6 @@ public class Ticket {
 
     public List<Version> getAffectedVersions() {
         return affectedVersions;
-    }
-
-    public void setAffectedVersions(List<Version> affectedVersions) {
-        this.affectedVersions = affectedVersions;
     }
 
     public void addAffectedVersion(Version version) {
