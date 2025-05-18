@@ -134,6 +134,8 @@ public class JiraService {
             startAt += MAX_RESULTS_PER_PAGE;
         } while (startAt < total);
 
+        logTicketStatistics(tickets);
+
         return tickets;
     }
 
@@ -284,4 +286,40 @@ public class JiraService {
             }
         }
     }
+
+    private static void logTicketStatistics(List<Ticket> tickets) {
+        int totalTickets = tickets.size();
+        int ticketsWithoutIV = 0;
+        int ticketsWithoutOV = 0;
+        int ticketsWithoutAV = 0;
+        int ticketsWithoutFV = 0;
+
+        for (Ticket ticket : tickets) {
+            if (ticket.getInjectedVersion() == null || ticket.getInjectedVersion().getName().isEmpty())
+                ticketsWithoutIV++;
+            if (ticket.getOpeningVersion() == null || ticket.getOpeningVersion().getName().isEmpty())
+                ticketsWithoutOV++;
+            if (ticket.getAffectedVersions() == null || ticket.getAffectedVersions().isEmpty())
+                ticketsWithoutAV++;
+            if (ticket.getFixedVersions() == null || ticket.getFixedVersions().isEmpty())
+                ticketsWithoutFV++;
+        }
+
+        LOGGER.log(Level.INFO, """
+                        Ticket statistics for {0} tickets:
+                        - Missing Injected Version: {1} ({2}%)
+                        - Missing Opening Version: {3} ({4}%)
+                        - Missing Affected Versions: {5} ({6}%)
+                        - Missing Fixed Versions: {7} ({8}%)""",
+                new Object[]{
+                        totalTickets,
+                        ticketsWithoutIV, ticketsWithoutIV * 100.0 / totalTickets,
+                        ticketsWithoutOV, ticketsWithoutOV * 100.0 / totalTickets,
+                        ticketsWithoutAV, ticketsWithoutAV * 100.0 / totalTickets,
+                        ticketsWithoutFV, ticketsWithoutFV * 100.0 / totalTickets
+                });
+    }
+
+
+
 }

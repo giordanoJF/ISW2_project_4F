@@ -121,3 +121,5 @@ modify which info to retrieve.
 normalize csv. tickets are not normalized reguarding missing info.
 
 split the file logic.
+
+migrate the parsing exception to the controller.
