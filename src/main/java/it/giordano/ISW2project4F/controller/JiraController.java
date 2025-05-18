@@ -71,7 +71,7 @@ public class JiraController {
      * @param <T>          The return type of the function
      * @return The result of the function
      */
-    private <T> T executeWithErrorHandling(IOSupplier<T> supplier, String errorMessage) {
+    private <T> T executeWithErrorHandling(ExceptionHandlingSupplier<T> supplier, String errorMessage) {
         try {
             return supplier.get();
         } catch (IOException e) {
@@ -105,7 +105,7 @@ public class JiraController {
 
     // Functional interface for IO operations
     @FunctionalInterface
-    private interface IOSupplier<T> {
-        T get() throws Exception;
+    private interface ExceptionHandlingSupplier<T> {
+        T get() throws IOException, ParseException, JSONException;
     }
 }
