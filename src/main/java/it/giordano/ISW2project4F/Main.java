@@ -1,6 +1,7 @@
 
 package it.giordano.ISW2project4F;
 
+import it.giordano.ISW2project4F.controller.CsvController;
 import it.giordano.ISW2project4F.controller.JiraController;
 import it.giordano.ISW2project4F.model.Ticket;
 import it.giordano.ISW2project4F.model.Version;
@@ -11,16 +12,17 @@ public class Main {
     private static final String PROJECT_KEY = "BOOKKEEPER";
 
     public static void main(String[] args) {
-        JiraController controller = new JiraController();
+        JiraController JiraController = new JiraController();
+        CsvController CsvController = new CsvController();
 
         // Retrieve data
-        List<Version> versions = controller.getProjectVersions(PROJECT_KEY);
-        List<Ticket> tickets = controller.getProjectTickets(PROJECT_KEY);
+        List<Version> versions = JiraController.getProjectVersions(PROJECT_KEY);
+        List<Ticket> tickets = JiraController.getProjectTickets(PROJECT_KEY);
 
         // Export versions to CSV
-        controller.exportVersionsToCsv(versions, PROJECT_KEY);
+        CsvController.exportVersionsToCsv(versions, PROJECT_KEY);
 
         // Export tickets to CSV
-        controller.exportTicketsToCsv(tickets, PROJECT_KEY);
+        CsvController.exportTicketsToCsv(tickets, PROJECT_KEY);
     }
 }

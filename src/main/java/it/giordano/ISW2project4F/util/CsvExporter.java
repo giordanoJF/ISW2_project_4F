@@ -22,12 +22,11 @@ public class CsvExporter {
     /**
      * Exports versions to a CSV file in the target folder.
      *
-     * @param versions List of versions to export
+     * @param versions   List of versions to export
      * @param projectKey The project key for naming the file
-     * @return The path to the created file
      * @throws IOException If an error occurs during file creation
      */
-    public static String exportVersionsAsCsv(List<Version> versions, String projectKey) throws IOException {
+    public static void exportVersionsAsCsv(List<Version> versions, String projectKey) throws IOException {
         String fileName = createFileName(projectKey, "versions");
         ensureDirectoryExists();
 
@@ -48,18 +47,16 @@ public class CsvExporter {
         }
 
         LOGGER.info("Exported versions CSV file: " + fileName);
-        return fileName;
     }
 
     /**
      * Exports tickets to a CSV file in the target folder.
      *
-     * @param tickets List of tickets to export
+     * @param tickets    List of tickets to export
      * @param projectKey The project key for naming the file
-     * @return The path to the created file
      * @throws IOException If an error occurs during file creation
      */
-    public static String exportTicketsAsCsv(List<Ticket> tickets, String projectKey) throws IOException {
+    public static void exportTicketsAsCsv(List<Ticket> tickets, String projectKey) throws IOException {
         String fileName = createFileName(projectKey, "tickets");
         ensureDirectoryExists();
 
@@ -89,7 +86,6 @@ public class CsvExporter {
         }
 
         LOGGER.info("Exported tickets CSV file: " + fileName);
-        return fileName;
     }
 
     /**

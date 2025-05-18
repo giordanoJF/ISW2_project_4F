@@ -3,7 +3,6 @@ package it.giordano.ISW2project4F.controller;
 import it.giordano.ISW2project4F.model.Ticket;
 import it.giordano.ISW2project4F.model.Version;
 import it.giordano.ISW2project4F.service.JiraService;
-import it.giordano.ISW2project4F.util.CsvExporter;
 import org.json.JSONException;
 
 import java.io.IOException;
@@ -14,9 +13,6 @@ import java.util.logging.Logger;
 
 public class JiraController {
     private static final Logger LOGGER = Logger.getLogger(JiraController.class.getName());
-
-    public JiraController() {
-    }
 
     /**
      * Retrieves all versions of a project.
@@ -38,28 +34,6 @@ public class JiraController {
     public List<Ticket> getProjectTickets(String projectKey) {
         return executeWithErrorHandling(() -> JiraService.getProjectTickets(projectKey),
                 "Error retrieving tickets for " + projectKey);
-    }
-
-    /**
-     * Exports versions to a CSV file.
-     *
-     * @param versions   List of versions to export
-     * @param projectKey The project key for naming the file
-     */
-    public void exportVersionsToCsv(List<Version> versions, String projectKey) {
-        executeWithErrorHandling(() -> CsvExporter.exportVersionsAsCsv(versions, projectKey),
-                "Error exporting versions to CSV for " + projectKey);
-    }
-
-    /**
-     * Exports tickets to a CSV file.
-     *
-     * @param tickets    List of tickets to export
-     * @param projectKey The project key for naming the file
-     */
-    public void exportTicketsToCsv(List<Ticket> tickets, String projectKey) {
-        executeWithErrorHandling(() -> CsvExporter.exportTicketsAsCsv(tickets, projectKey),
-                "Error exporting tickets to CSV for " + projectKey);
     }
 
     /**
@@ -103,7 +77,6 @@ public class JiraController {
         }
     }
 
-    // Functional interface for IO operations
     @FunctionalInterface
     private interface ExceptionHandlingSupplier<T> {
         T get() throws IOException, ParseException, JSONException;
