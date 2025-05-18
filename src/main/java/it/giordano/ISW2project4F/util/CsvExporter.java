@@ -7,8 +7,10 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
@@ -18,6 +20,26 @@ public class CsvExporter {
     private static final String OUTPUT_DIR = "target";
     private static final String CSV_EXTENSION = ".csv";
     private static final String CSV_SEPARATOR = ",";
+
+    // Column selection flags for ticket export
+    public static boolean INCLUDE_KEY = true;
+    public static boolean INCLUDE_SUMMARY = false;
+    public static boolean INCLUDE_STATUS = false;
+    public static boolean INCLUDE_RESOLUTION = false;
+    public static boolean INCLUDE_CREATED_DATE = true;
+    public static boolean INCLUDE_RESOLUTION_DATE = true;
+    public static boolean INCLUDE_OPENING_VERSION = true;
+    public static boolean INCLUDE_FIXED_VERSIONS = true;
+    public static boolean INCLUDE_INJECTED_VERSION = true;
+    public static boolean INCLUDE_AFFECTED_VERSIONS = true;
+
+    // Column selection flags for version export
+    public static boolean INCLUDE_VERSION_ID = true;
+    public static boolean INCLUDE_VERSION_NAME = true;
+    public static boolean INCLUDE_VERSION_RELEASED = true;
+    public static boolean INCLUDE_VERSION_ARCHIVED = true;
+    public static boolean INCLUDE_VERSION_RELEASE_DATE = true;
+
 
     /**
      * Exports versions to a CSV file in the target folder.
@@ -31,23 +53,33 @@ public class CsvExporter {
         ensureDirectoryExists();
 
         try (CsvWriter writer = new CsvWriter(fileName)) {
-            // Write header
-            writer.writeLine("ID", "Name", "Released", "Archived", "ReleaseDate");
+            // Build header based on include flags
+            List<String> headers = new ArrayList<>();
+            if (INCLUDE_VERSION_ID) headers.add("ID");
+            if (INCLUDE_VERSION_NAME) headers.add("Name");
+            if (INCLUDE_VERSION_RELEASED) headers.add("Released");
+            if (INCLUDE_VERSION_ARCHIVED) headers.add("Archived");
+            if (INCLUDE_VERSION_RELEASE_DATE) headers.add("ReleaseDate");
+
+            writer.writeLine(headers.toArray(new String[0]));
 
             // Write data
             for (Version version : versions) {
-                writer.writeLine(
-                        version.getId(),
-                        version.getName(),
-                        String.valueOf(version.isReleased()),
-                        String.valueOf(version.isArchived()),
-                        formatDate(version.getReleaseDate())
-                );
+                List<String> values = new ArrayList<>();
+
+                if (INCLUDE_VERSION_ID) values.add(version.getId());
+                if (INCLUDE_VERSION_NAME) values.add(version.getName());
+                if (INCLUDE_VERSION_RELEASED) values.add(String.valueOf(version.isReleased()));
+                if (INCLUDE_VERSION_ARCHIVED) values.add(String.valueOf(version.isArchived()));
+                if (INCLUDE_VERSION_RELEASE_DATE) values.add(formatDate(version.getReleaseDate()));
+
+                writer.writeLine(values.toArray(new String[0]));
             }
         }
 
         LOGGER.info("Exported versions CSV file: " + fileName);
     }
+
 
     /**
      * Exports tickets to a CSV file in the target folder.
@@ -61,32 +93,47 @@ public class CsvExporter {
         ensureDirectoryExists();
 
         try (CsvWriter writer = new CsvWriter(fileName)) {
-            // Write header
-            writer.writeLine(
-                    "Key", "Summary", "Status", "Resolution", "CreatedDate",
-                    "ResolutionDate", "OpeningVersion", "FixedVersions",
-                    "InjectedVersion", "AffectedVersions"
-            );
+            List<String> headers = getHeaders();
+
+            writer.writeLine(headers.toArray(new String[0]));
 
             // Write data
             for (Ticket ticket : tickets) {
-                writer.writeLine(
-                        ticket.getKey(),
-                        ticket.getSummary(),
-                        ticket.getStatus(),
-                        ticket.getResolution(),
-                        formatDate(ticket.getCreatedDate()),
-                        formatDate(ticket.getResolutionDate()),
-                        getVersionName(ticket.getOpeningVersion()),
-                        formatVersionsList(ticket.getFixedVersions()),
-                        getVersionName(ticket.getInjectedVersion()),
-                        formatVersionsList(ticket.getAffectedVersions())
-                );
+                List<String> values = new ArrayList<>();
+
+                if (INCLUDE_KEY) values.add(ticket.getKey());
+                if (INCLUDE_SUMMARY) values.add(ticket.getSummary());
+                if (INCLUDE_STATUS) values.add(ticket.getStatus());
+                if (INCLUDE_RESOLUTION) values.add(ticket.getResolution());
+                if (INCLUDE_CREATED_DATE) values.add(formatDate(ticket.getCreatedDate()));
+                if (INCLUDE_RESOLUTION_DATE) values.add(formatDate(ticket.getResolutionDate()));
+                if (INCLUDE_OPENING_VERSION) values.add(getVersionName(ticket.getOpeningVersion()));
+                if (INCLUDE_FIXED_VERSIONS) values.add(formatVersionsList(ticket.getFixedVersions()));
+                if (INCLUDE_INJECTED_VERSION) values.add(getVersionName(ticket.getInjectedVersion()));
+                if (INCLUDE_AFFECTED_VERSIONS) values.add(formatVersionsList(ticket.getAffectedVersions()));
+
+                writer.writeLine(values.toArray(new String[0]));
             }
         }
 
         LOGGER.info("Exported tickets CSV file: " + fileName);
     }
+
+    private static List<String> getHeaders() {
+        List<String> headers = new ArrayList<>();
+        if (INCLUDE_KEY) headers.add("Key");
+        if (INCLUDE_SUMMARY) headers.add("Summary");
+        if (INCLUDE_STATUS) headers.add("Status");
+        if (INCLUDE_RESOLUTION) headers.add("Resolution");
+        if (INCLUDE_CREATED_DATE) headers.add("CreatedDate");
+        if (INCLUDE_RESOLUTION_DATE) headers.add("ResolutionDate");
+        if (INCLUDE_OPENING_VERSION) headers.add("OpeningVersion");
+        if (INCLUDE_FIXED_VERSIONS) headers.add("FixedVersions");
+        if (INCLUDE_INJECTED_VERSION) headers.add("InjectedVersion");
+        if (INCLUDE_AFFECTED_VERSIONS) headers.add("AffectedVersions");
+        return headers;
+    }
+
 
     /**
      * Creates a filename for the CSV export.
