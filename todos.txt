@@ -125,3 +125,12 @@ split the file logic.
 migrate the parsing exception to the controller.
 
 check all comments
+
+now we must confirm that all info are correctly retrived -> filter out some tickets -> evaluate some missing info for some tickets.
+
+examples of filtering:
+    OV missing because of no versions before ticket opening
+    multiple FV
+    temporal inconsistency
+    AV and IV can be evaluated with proportion (cold start and then incremental)
+    (check slides and notebook)

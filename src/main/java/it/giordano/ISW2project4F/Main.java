@@ -9,7 +9,7 @@ import it.giordano.ISW2project4F.model.Version;
 import java.util.List;
 
 public class Main {
-    private static final String PROJECT_KEY = "BOOKKEEPER";
+    private static final String PROJECT_KEY = "OPENJPA";
 
     public static void main(String[] args) {
         JiraController JiraController = new JiraController();

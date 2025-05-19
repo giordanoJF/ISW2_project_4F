@@ -50,8 +50,9 @@ public class JiraService {
      * Retrieves all versions of a project from Jira.
      *
      * @param projectKey The key of the project
-     * @return List of versions for the project
+     * @return List of versions for the project. Inconsistent returns are: empty list, list of non-null versions with null/empty properties.
      * @throws IOException If an error occurs during the HTTP request
+     * @throws ParseException if an error occurs during parsing
      */
     public static List<Version> getProjectVersions(String projectKey) throws IOException, ParseException {
         List<Version> versions = new ArrayList<>();
@@ -71,6 +72,10 @@ public class JiraService {
 
     /**
      * Parses a JSON object into a Version entity.
+     *
+     * @param versionJson The JSON object containing version information
+     * @return Version object populated with data from JSON. Inconsistent returns are: Version with null/empty properties.
+     * @throws ParseException if the release date cannot be parsed
      */
     private static Version parseVersionFromJson(JSONObject versionJson) throws ParseException {
         Version version = new Version();
@@ -89,14 +94,16 @@ public class JiraService {
 
         return version;
     }
-    
+
     /**
      * Retrieves bug tickets from Jira that are fixed and closed/resolved.
      *
      * @param projectKey The key of the project
-     * @return List of tickets meeting the criteria
+     * @return List of tickets meeting the criteria. Inconsistent returns are: empty list, tickets with null/empty properties
      * @throws IOException If an error occurs during the HTTP request
+     * @throws ParseException If an error occurs while parsing dates from JSON
      */
+
     public static List<Ticket> getProjectTickets(String projectKey) throws IOException, ParseException {
         List<Ticket> tickets = new ArrayList<>();
         List<Version> versions = getProjectVersions(projectKey);
@@ -141,11 +148,17 @@ public class JiraService {
 
     /**
      * Creates a map of version names to Version objects.
+     *
+     * @param versions List of Version objects to map
+     * @return Map with version names as keys and Version objects as values. Inconsistent returns are: empty map.
      */
+
     private static Map<String, Version> createVersionMap(List<Version> versions) {
         Map<String, Version> versionMap = new HashMap<>();
         for (Version version : versions) {
-            versionMap.put(version.getName(), version);
+            if (version.getName() != null && !version.getName().isEmpty()) {
+                versionMap.put(version.getName(), version);
+                }
         }
         return versionMap;
     }
