@@ -146,3 +146,9 @@ some exceptions are caught inside jiraservice, others by controller.
 too much logs.
 
 translate to english comments.
+
+understand better csv exporter.
+
+clean info logs.
+
+sonar

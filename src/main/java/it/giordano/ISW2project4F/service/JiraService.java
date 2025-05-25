@@ -55,9 +55,8 @@ public class JiraService {
      * @param projectKey Il codice del progetto
      * @return Lista delle versioni del progetto. Può essere vuota se non ci sono versioni.
      * @throws IOException Se si verifica un errore durante la richiesta HTTP
-     * @throws ParseException Se si verifica un errore durante l'analisi delle date
      */
-    public static List<Version> getProjectVersions(String projectKey) throws IOException, ParseException {
+    public static List<Version> getProjectVersions(String projectKey) throws IOException {
         if (projectKey == null || projectKey.isEmpty()) {
             LOGGER.warning("Project key is null or empty");
             return new ArrayList<>();
@@ -77,9 +76,7 @@ public class JiraService {
             JSONObject versionJson = versionArray.optJSONObject(i);
             if (versionJson != null) {
                 Version version = parseVersionFromJson(versionJson);
-                if (version != null) {
-                    versions.add(version);
-                }
+                versions.add(version);
             }
         }
 
@@ -97,9 +94,8 @@ public class JiraService {
      *
      * @param versionJson L'oggetto JSON contenente le informazioni sulla versione
      * @return Oggetto Version popolato con dati dal JSON. Non restituisce mai null.
-     * @throws ParseException Se la data di rilascio non può essere analizzata
      */
-    private static Version parseVersionFromJson(JSONObject versionJson) throws ParseException {
+    private static Version parseVersionFromJson(JSONObject versionJson) {
         if (versionJson == null) {
             return new Version();
         }
@@ -131,9 +127,8 @@ public class JiraService {
      * @param projectKey Il codice del progetto
      * @return Lista di ticket che soddisfano i criteri
      * @throws IOException Se si verifica un errore durante la richiesta HTTP
-     * @throws ParseException Se si verifica un errore durante l'analisi delle date dal JSON
      */
-    public static List<Ticket> getProjectTickets(String projectKey) throws IOException, ParseException {
+    public static List<Ticket> getProjectTickets(String projectKey) throws IOException {
         if (projectKey == null || projectKey.isEmpty()) {
             LOGGER.warning("Project key is null or empty");
             return new ArrayList<>();
@@ -232,9 +227,8 @@ public class JiraService {
      * @param issueJson L'oggetto JSON contenente i dati del ticket
      * @param versionMap Mappa di nomi di versione a oggetti Version
      * @return Un oggetto Ticket popolato con i dati del JSON
-     * @throws ParseException Se si verifica un errore durante l'analisi delle date
      */
-    private static Ticket parseTicket(JSONObject issueJson, Map<String, Version> versionMap) throws ParseException {
+    private static Ticket parseTicket(JSONObject issueJson, Map<String, Version> versionMap) {
         if (issueJson == null) {
             return null;
         }
@@ -365,10 +359,11 @@ public class JiraService {
                     }
                 }
                 ticket.setInjectedVersion(oldestVersion);
-            } else if (!affectedVersions.isEmpty()) {
-                // Se nessuna ha una data di rilascio, prendi la prima
-                //ticket.setInjectedVersion(affectedVersions.get(0));
             }
+//            else if (!affectedVersions.isEmpty()) {
+//                // Se nessuna ha una data di rilascio, prendi la prima
+//                ticket.setInjectedVersion(affectedVersions.get(0));
+//            }
         }
 
         // Imposta la versione di apertura (l'ultima versione rilasciata prima della creazione del ticket)
@@ -475,17 +470,18 @@ public class JiraService {
             }
         }
 
-        double percentIV = totalTickets > 0 ? ticketsWithoutIV * 100.0 / totalTickets : 0;
-        double percentOV = totalTickets > 0 ? ticketsWithoutOV * 100.0 / totalTickets : 0;
-        double percentAV = totalTickets > 0 ? ticketsWithoutAV * 100.0 / totalTickets : 0;
-        double percentFV = totalTickets > 0 ? ticketsWithoutFV * 100.0 / totalTickets : 0;
+        double percentIV = ticketsWithoutIV * 100.0 / totalTickets;
+        double percentOV = ticketsWithoutOV * 100.0 / totalTickets;
+        double percentAV = ticketsWithoutAV * 100.0 / totalTickets;
+        double percentFV = ticketsWithoutFV * 100.0 / totalTickets;
 
-        LOGGER.log(Level.INFO, 
-            "Ticket statistics for {0} tickets:\n" +
-            "- Missing Injected Version: {1} ({2,number,#.##}%)\n" +
-            "- Missing Opening Version: {3} ({4,number,#.##}%)\n" +
-            "- Missing Affected Versions: {5} ({6,number,#.##}%)\n" +
-            "- Missing Fixed Versions: {7} ({8,number,#.##}%)",
+        LOGGER.log(Level.INFO,
+                """
+                        Ticket statistics for {0} tickets:
+                        - Missing Injected Version: {1} ({2,number,#.##}%)
+                        - Missing Opening Version: {3} ({4,number,#.##}%)
+                        - Missing Affected Versions: {5} ({6,number,#.##}%)
+                        - Missing Fixed Versions: {7} ({8,number,#.##}%)""",
             new Object[]{
                 totalTickets,
                 ticketsWithoutIV, percentIV,

@@ -80,6 +80,6 @@ public class JiraController {
 
     @FunctionalInterface
     private interface ExceptionHandlingSupplier<T> {
-        T get() throws IOException, ParseException, JSONException, Exception;
+        T get() throws Exception;
     }
 }
