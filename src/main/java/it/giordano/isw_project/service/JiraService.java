@@ -1,7 +1,7 @@
-package it.giordano.ISW2project4F.service;
+package it.giordano.isw_project.service;
 
-import it.giordano.ISW2project4F.model.Ticket;
-import it.giordano.ISW2project4F.model.Version;
+import it.giordano.isw_project.model.Ticket;
+import it.giordano.isw_project.model.Version;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;

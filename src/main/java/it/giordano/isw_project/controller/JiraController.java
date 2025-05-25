@@ -1,8 +1,8 @@
-package it.giordano.ISW2project4F.controller;
+package it.giordano.isw_project.controller;
 
-import it.giordano.ISW2project4F.model.Ticket;
-import it.giordano.ISW2project4F.model.Version;
-import it.giordano.ISW2project4F.service.JiraService;
+import it.giordano.isw_project.model.Ticket;
+import it.giordano.isw_project.model.Version;
+import it.giordano.isw_project.service.JiraService;
 import org.json.JSONException;
 
 import java.io.IOException;
@@ -50,29 +50,19 @@ public class JiraController {
             return supplier.get();
         } catch (IOException e) {
             // I/O errors are critical - log and terminate
-            LOGGER.log(Level.SEVERE, errorMessage + ": I/O Error", e);
-            System.err.println("Critical error: " + errorMessage + ": " + e.getMessage());
+            LOGGER.log(Level.SEVERE, "{0}: I/O Error", errorMessage);
             System.exit(1);
             return null;
         }
         catch (ParseException e) {
             // Date parsing errors
-            LOGGER.log(Level.SEVERE, errorMessage + ": Date format error", e);
-            System.err.println("Error parsing date: " + errorMessage + ": " + e.getMessage());
+            LOGGER.log(Level.SEVERE, "{0}: Date format error", errorMessage);
             System.exit(1);
             return null;
         }
         catch (JSONException e) {
-            // Data format errors are critical - log and terminate
-            LOGGER.log(Level.SEVERE, errorMessage + ": Data format error", e);
-            System.err.println("Critical error: " + errorMessage + ": " + e.getMessage());
-            System.exit(1);
-            return null;
-        }
-        catch (Exception e) {
-            // Unexpected errors are critical - log and terminate
-            LOGGER.log(Level.SEVERE, errorMessage + ": Unexpected error", e);
-            System.err.println("Critical error: " + errorMessage + ": " + e.getMessage());
+            // JSON format errors are critical - log and terminate
+            LOGGER.log(Level.SEVERE, "{0}: JSON format error", errorMessage);
             System.exit(1);
             return null;
         }
@@ -80,6 +70,6 @@ public class JiraController {
 
     @FunctionalInterface
     private interface ExceptionHandlingSupplier<T> {
-        T get() throws Exception;
+        T get() throws IOException, ParseException, JSONException;
     }
 }

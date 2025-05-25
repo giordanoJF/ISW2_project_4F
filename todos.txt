@@ -152,3 +152,9 @@ understand better csv exporter.
 clean info logs.
 
 sonar
+
+mvn documentation?
+
+print a better log
+
+check new refactored code

@@ -1,4 +1,4 @@
-package it.giordano.ISW2project4F.model;
+package it.giordano.isw_project.model;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,10 +16,6 @@ public class Ticket {
     private List<Version> fixedVersions; // FV
     private List<Version> affectedVersions; // AV
     private Version injectedVersion; // IV (oldest AV)
-
-    // Constructor
-    public Ticket() {
-    }
 
     // Getters and Setters
     public String getKey() {

@@ -1,7 +1,7 @@
-package it.giordano.ISW2project4F.util;
+package it.giordano.isw_project.util;
 
-import it.giordano.ISW2project4F.model.Ticket;
-import it.giordano.ISW2project4F.model.Version;
+import it.giordano.isw_project.model.Ticket;
+import it.giordano.isw_project.model.Version;
 
 import java.io.File;
 import java.io.FileWriter;

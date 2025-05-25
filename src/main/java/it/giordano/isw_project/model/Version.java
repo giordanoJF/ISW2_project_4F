@@ -1,4 +1,4 @@
-package it.giordano.ISW2project4F.model;
+package it.giordano.isw_project.model;
 
 import java.util.Date;
 
@@ -8,10 +8,6 @@ public class Version {
     private boolean released;
     private boolean archived;
     private Date releaseDate;
-
-    // Constructor
-    public Version() {
-    }
 
     // Getters and Setters
     public String getId() {

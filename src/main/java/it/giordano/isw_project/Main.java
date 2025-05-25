@@ -1,10 +1,10 @@
 
-package it.giordano.ISW2project4F;
+package it.giordano.isw_project;
 
-import it.giordano.ISW2project4F.controller.CsvController;
-import it.giordano.ISW2project4F.controller.JiraController;
-import it.giordano.ISW2project4F.model.Ticket;
-import it.giordano.ISW2project4F.model.Version;
+import it.giordano.isw_project.controller.CsvController;
+import it.giordano.isw_project.controller.JiraController;
+import it.giordano.isw_project.model.Ticket;
+import it.giordano.isw_project.model.Version;
 
 import java.util.List;
 
