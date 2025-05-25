@@ -19,10 +19,12 @@ import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+/**
+ * Service class for interacting with Jira API.
+ * Handles retrieving project versions and tickets.
+ */
 public class JiraService {
     private static final String JIRA_BASE_URL = "https://issues.apache.org/jira/rest/api/2";
-    private static final SimpleDateFormat TICKET_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
-    private static final SimpleDateFormat VERSION_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd");
     private static final Logger LOGGER = Logger.getLogger(JiraService.class.getName());
 
     // Campi JSON per le versioni
@@ -48,6 +50,15 @@ public class JiraService {
     private static final String TOTAL = "total";
     private static final String ISSUES = "issues";
     private static final String FIELDS = "fields";
+
+    // Formati delle date
+    private static final String TICKET_DATE_FORMAT_PATTERN = "yyyy-MM-dd'T'HH:mm:ss.SSSZ";
+    private static final String VERSION_DATE_FORMAT_PATTERN = "yyyy-MM-dd";
+
+    // Private constructor to prevent instantiation
+    private JiraService() {
+        throw new IllegalStateException("Utility class");
+    }
 
     /**
      * Recupera tutte le versioni di un progetto da Jira.
@@ -81,9 +92,9 @@ public class JiraService {
         }
 
         if (versions.isEmpty()) {
-            LOGGER.info("No versions found for project " + projectKey);
+            LOGGER.log(Level.INFO, "No versions found for project {0}", projectKey);
         } else {
-            LOGGER.info("Retrieved " + versions.size() + " versions for project " + projectKey);
+            LOGGER.log(Level.INFO, "Retrieved {0} versions for project {1}", new Object[]{versions.size(), projectKey});
         }
 
         return versions;
@@ -109,7 +120,8 @@ public class JiraService {
         String dateStr = versionJson.optString(FIELD_RELEASE_DATE, "");
         if (!dateStr.isEmpty()) {
             try {
-                version.setReleaseDate(parseDate(dateStr, VERSION_DATE_FORMAT));
+                SimpleDateFormat dateFormat = new SimpleDateFormat(VERSION_DATE_FORMAT_PATTERN);
+                version.setReleaseDate(parseDate(dateStr, dateFormat));
             } catch (ParseException e) {
                 LOGGER.warning("Failed to parse release date for version " + version.getName() + ": " + dateStr);
                 version.setReleaseDate(null);
@@ -139,64 +151,105 @@ public class JiraService {
         Map<String, Version> versionMap = createVersionMap(versions);
 
         if (versions.isEmpty()) {
-            LOGGER.warning("No versions found for project " + projectKey + ". Cannot retrieve tickets.");
+            LOGGER.log(Level.WARNING, "No versions found for project {0}. Cannot retrieve tickets.", projectKey);
             return tickets;
         }
 
-        String jql = "project=" + projectKey +
+        String jql = buildJqlQuery(projectKey);
+        String encodedJql = java.net.URLEncoder.encode(jql, StandardCharsets.UTF_8);
+        tickets = fetchAllTickets(encodedJql, versionMap);
+
+        logTicketStatistics(tickets);
+        return tickets;
+    }
+
+    /**
+     * Builds the JQL query for retrieving tickets.
+     *
+     * @param projectKey The project key
+     * @return JQL query string
+     */
+    private static String buildJqlQuery(String projectKey) {
+        return "project=" + projectKey +
                 " AND issuetype=Bug" +
                 " AND resolution=Fixed" +
                 " AND status in (Closed, Resolved)";
-        String encodedJql = java.net.URLEncoder.encode(jql, StandardCharsets.UTF_8);
+    }
 
+    /**
+     * Fetches all tickets from Jira API with pagination.
+     *
+     * @param encodedJql The encoded JQL query
+     * @param versionMap Map of version names to Version objects
+     * @return List of tickets
+     * @throws IOException If an HTTP error occurs
+     */
+    private static List<Ticket> fetchAllTickets(String encodedJql, Map<String, Version> versionMap) throws IOException {
+        List<Ticket> tickets = new ArrayList<>();
         int startAt = 0;
         int total = 0;
         boolean firstPage = true;
 
         do {
-            String url = JIRA_BASE_URL + "/search?jql=" + encodedJql +
-                    "&startAt=" + startAt +
-                    "&maxResults=" + MAX_RESULTS_PER_PAGE +
-                    "&fields=key,summary,description,created,resolutiondate,status,resolution,versions,fixVersions";
-
+            String url = buildTicketsUrl(encodedJql, startAt);
             String jsonResponse = executeGetRequest(url);
-            
+
             if (jsonResponse == null || jsonResponse.isEmpty()) {
                 LOGGER.warning("Empty response from Jira API for tickets search");
                 break;
             }
 
             JSONObject responseObj = new JSONObject(jsonResponse);
-            
+
             if (firstPage) {
                 total = responseObj.optInt(TOTAL, 0);
                 firstPage = false;
-                LOGGER.info("Found " + total + " tickets for project " + projectKey);
+                LOGGER.log(Level.INFO, "Found {0} tickets", total);
             }
 
             JSONArray issuesArray = responseObj.optJSONArray(ISSUES);
-            
-            if (issuesArray == null) {
-                LOGGER.warning("No issues array found in response");
-                break;
-            }
 
-            for (int i = 0; i < issuesArray.length(); i++) {
-                JSONObject issueJson = issuesArray.optJSONObject(i);
-                if (issueJson != null) {
-                    Ticket ticket = parseTicket(issueJson, versionMap);
-                    if (ticket != null) {
-                        tickets.add(ticket);
-                    }
-                }
+            if (issuesArray != null) {
+                processIssuesArray(issuesArray, tickets, versionMap);
+            } else {
+                LOGGER.warning("No issues array found in response");
             }
 
             startAt += MAX_RESULTS_PER_PAGE;
         } while (startAt < total);
 
-        logTicketStatistics(tickets);
-
         return tickets;
+    }
+
+    /**
+     * Builds the URL for the tickets search API.
+     *
+     * @param encodedJql The encoded JQL query
+     * @param startAt The pagination start index
+     * @return The URL for the tickets search API
+     */
+    private static String buildTicketsUrl(String encodedJql, int startAt) {
+        return JIRA_BASE_URL + "/search?jql=" + encodedJql +
+                "&startAt=" + startAt +
+                "&maxResults=" + MAX_RESULTS_PER_PAGE +
+                "&fields=key,summary,description,created,resolutiondate,status,resolution,versions,fixVersions";
+    }
+
+    /**
+     * Processes the issues array and adds tickets to the list.
+     *
+     * @param issuesArray The JSON array of issues
+     * @param tickets The list to add tickets to
+     * @param versionMap Map of version names to Version objects
+     */
+    private static void processIssuesArray(JSONArray issuesArray, List<Ticket> tickets, Map<String, Version> versionMap) {
+        for (int i = 0; i < issuesArray.length(); i++) {
+            JSONObject issueJson = issuesArray.optJSONObject(i);
+            if (issueJson != null) {
+                Ticket ticket = parseTicket(issueJson, versionMap);
+                tickets.add(ticket);
+            }
+        }
     }
 
     /**
@@ -242,15 +295,39 @@ public class JiraService {
             return ticket;
         }
 
-        // Imposta campi di base
+        setBasicTicketFields(ticket, fields);
+        setTicketDates(ticket, fields);
+        setTicketStatusFields(ticket, fields);
+        setTicketVersions(ticket, fields, versionMap);
+        setDerivedVersions(ticket, versionMap);
+
+        return ticket;
+    }
+
+    /**
+     * Sets the basic fields of a ticket.
+     *
+     * @param ticket The ticket to update
+     * @param fields The JSON object with ticket fields
+     */
+    private static void setBasicTicketFields(Ticket ticket, JSONObject fields) {
         ticket.setSummary(fields.optString(FIELD_SUMMARY, ""));
         ticket.setDescription(fields.optString(FIELD_DESCRIPTION, ""));
+    }
 
-        // Imposta date
+    /**
+     * Sets the date fields of a ticket.
+     *
+     * @param ticket The ticket to update
+     * @param fields The JSON object with ticket fields
+     */
+    private static void setTicketDates(Ticket ticket, JSONObject fields) {
+        SimpleDateFormat dateFormat = new SimpleDateFormat(TICKET_DATE_FORMAT_PATTERN);
+        
         String createdDateStr = fields.optString(FIELD_CREATED_DATE, "");
         if (!createdDateStr.isEmpty()) {
             try {
-                ticket.setCreatedDate(parseDate(createdDateStr, TICKET_DATE_FORMAT));
+                ticket.setCreatedDate(parseDate(createdDateStr, dateFormat));
             } catch (ParseException e) {
                 LOGGER.warning("Failed to parse created date for ticket " + ticket.getKey() + ": " + createdDateStr);
             }
@@ -259,13 +336,20 @@ public class JiraService {
         String resolutionDateStr = fields.optString(FIELD_RESOLUTION_DATE, "");
         if (!resolutionDateStr.isEmpty()) {
             try {
-                ticket.setResolutionDate(parseDate(resolutionDateStr, TICKET_DATE_FORMAT));
+                ticket.setResolutionDate(parseDate(resolutionDateStr, dateFormat));
             } catch (ParseException e) {
                 LOGGER.warning("Failed to parse resolution date for ticket " + ticket.getKey() + ": " + resolutionDateStr);
             }
         }
+    }
 
-        // Imposta stato e risoluzione
+    /**
+     * Sets the status fields of a ticket.
+     *
+     * @param ticket The ticket to update
+     * @param fields The JSON object with ticket fields
+     */
+    private static void setTicketStatusFields(Ticket ticket, JSONObject fields) {
         JSONObject statusObj = fields.optJSONObject(FIELD_STATUS);
         if (statusObj != null) {
             ticket.setStatus(statusObj.optString(FIELD_NAME, ""));
@@ -275,14 +359,6 @@ public class JiraService {
         if (resolutionObj != null) {
             ticket.setResolution(resolutionObj.optString(FIELD_NAME, ""));
         }
-
-        // Imposta versioni
-        setTicketVersions(ticket, fields, versionMap);
-
-        // Imposta versioni derivate
-        setDerivedVersions(ticket, versionMap);
-
-        return ticket;
     }
 
     /**
@@ -298,27 +374,34 @@ public class JiraService {
         }
 
         // Aggiungi versioni fisse
-        JSONArray fixVersions = fields.optJSONArray(FIELD_FIX_VERSIONS);
-        if (fixVersions != null) {
-            for (int i = 0; i < fixVersions.length(); i++) {
-                JSONObject versionJson = fixVersions.optJSONObject(i);
-                if (versionJson != null) {
-                    String versionName = versionJson.optString(FIELD_NAME, "");
-                    if (!versionName.isEmpty() && versionMap.containsKey(versionName)) {
-                        ticket.addFixedVersion(versionMap.get(versionName));
-                    }
-                }
-            }
-        }
+        addVersionsFromJsonArray(ticket, fields.optJSONArray(FIELD_FIX_VERSIONS), versionMap, true);
 
         // Aggiungi versioni interessate
-        JSONArray versionsArray = fields.optJSONArray(FIELD_VERSIONS);
-        if (versionsArray != null) {
-            for (int i = 0; i < versionsArray.length(); i++) {
-                JSONObject versionJson = versionsArray.optJSONObject(i);
-                if (versionJson != null) {
-                    String versionName = versionJson.optString(FIELD_NAME, "");
-                    if (!versionName.isEmpty() && versionMap.containsKey(versionName)) {
+        addVersionsFromJsonArray(ticket, fields.optJSONArray(FIELD_VERSIONS), versionMap, false);
+    }
+
+    /**
+     * Adds versions from a JSON array to a ticket.
+     *
+     * @param ticket The ticket to update
+     * @param versionsArray The JSON array of versions
+     * @param versionMap Map of version names to Version objects
+     * @param isFixVersion Whether the versions are fixed versions or affected versions
+     */
+    private static void addVersionsFromJsonArray(Ticket ticket, JSONArray versionsArray, 
+                                                Map<String, Version> versionMap, boolean isFixVersion) {
+        if (versionsArray == null) {
+            return;
+        }
+        
+        for (int i = 0; i < versionsArray.length(); i++) {
+            JSONObject versionJson = versionsArray.optJSONObject(i);
+            if (versionJson != null) {
+                String versionName = versionJson.optString(FIELD_NAME, "");
+                if (!versionName.isEmpty() && versionMap.containsKey(versionName)) {
+                    if (isFixVersion) {
+                        ticket.addFixedVersion(versionMap.get(versionName));
+                    } else {
                         ticket.addAffectedVersion(versionMap.get(versionName));
                     }
                 }
@@ -337,51 +420,82 @@ public class JiraService {
             return;
         }
 
-        // Imposta la versione iniettata (la versione interessata più vecchia)
+        setInjectedVersion(ticket);
+        setOpeningVersion(ticket, versionMap);
+    }
+
+    /**
+     * Sets the injected version of a ticket.
+     *
+     * @param ticket The ticket to update
+     */
+    private static void setInjectedVersion(Ticket ticket) {
         List<Version> affectedVersions = ticket.getAffectedVersions();
-        if (affectedVersions != null && !affectedVersions.isEmpty()) {
-            Version oldestVersion = null;
-            
-            // Inizializza con la prima versione che ha una data di rilascio
-            for (Version version : affectedVersions) {
-                if (version != null && version.getReleaseDate() != null) {
-                    oldestVersion = version;
-                    break;
-                }
-            }
-            
-            // Trova la versione più vecchia tra quelle con data di rilascio
-            if (oldestVersion != null) {
-                for (Version version : affectedVersions) {
-                    if (version != null && version.getReleaseDate() != null && 
-                        version.getReleaseDate().before(oldestVersion.getReleaseDate())) {
-                        oldestVersion = version;
-                    }
-                }
-                ticket.setInjectedVersion(oldestVersion);
-            }
-//            else if (!affectedVersions.isEmpty()) {
-//                // Se nessuna ha una data di rilascio, prendi la prima
-//                ticket.setInjectedVersion(affectedVersions.get(0));
-//            }
+        if (affectedVersions == null || affectedVersions.isEmpty()) {
+            return;
         }
 
-        // Imposta la versione di apertura (l'ultima versione rilasciata prima della creazione del ticket)
-        if (ticket.getCreatedDate() != null) {
-            Version latestVersion = null;
-            
-            for (Version version : versionMap.values()) {
+        Version oldestVersion = findOldestVersionWithReleaseDate(affectedVersions);
+        if (oldestVersion != null) {
+            ticket.setInjectedVersion(oldestVersion);
+        }
+    }
+
+    /**
+     * Finds the oldest version with a release date.
+     *
+     * @param versions The list of versions to search
+     * @return The oldest version with a release date, or null if none found
+     */
+    private static Version findOldestVersionWithReleaseDate(List<Version> versions) {
+        Version oldestVersion = null;
+        
+        // Find the first version with a release date
+        for (Version version : versions) {
+            if (version != null && version.getReleaseDate() != null) {
+                oldestVersion = version;
+                break;
+            }
+        }
+        
+        // Find the oldest version
+        if (oldestVersion != null) {
+            for (Version version : versions) {
                 if (version != null && version.getReleaseDate() != null && 
-                    !version.getReleaseDate().after(ticket.getCreatedDate())) {
-                    if (latestVersion == null || 
-                        version.getReleaseDate().after(latestVersion.getReleaseDate())) {
-                        latestVersion = version;
-                    }
+                    version.getReleaseDate().before(oldestVersion.getReleaseDate())) {
+                    oldestVersion = version;
                 }
             }
-            
-            ticket.setOpeningVersion(latestVersion);
         }
+        
+        return oldestVersion;
+    }
+
+    /**
+     * Sets the opening version of a ticket.
+     *
+     * @param ticket The ticket to update
+     * @param versionMap Map of version names to Version objects
+     */
+    private static void setOpeningVersion(Ticket ticket, Map<String, Version> versionMap) {
+        if (ticket.getCreatedDate() == null) {
+            return;
+        }
+
+        Version latestVersion = null;
+
+        for (Version version : versionMap.values()) {
+            if (version != null &&
+                    version.getReleaseDate() != null &&
+                    !version.getReleaseDate().after(ticket.getCreatedDate()) &&
+                    (latestVersion == null || version.getReleaseDate().after(latestVersion.getReleaseDate()))) {
+
+                latestVersion = version;
+            }
+        }
+
+
+        ticket.setOpeningVersion(latestVersion);
     }
 
     /**
@@ -414,8 +528,9 @@ public class JiraService {
         try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
             HttpGet httpGet = new HttpGet(url);
             try (CloseableHttpResponse response = httpClient.execute(httpGet)) {
-                if (response.getStatusLine().getStatusCode() != 200) {
-                    LOGGER.warning("HTTP request failed with status: " + response.getStatusLine().getStatusCode());
+                int statusCode = response.getStatusLine().getStatusCode();
+                if (statusCode != 200) {
+                    LOGGER.log(Level.WARNING, "HTTP request failed with status: {0}", statusCode);
                     return null;
                 }
                 
@@ -441,39 +556,7 @@ public class JiraService {
         }
         
         int totalTickets = tickets.size();
-        int ticketsWithoutIV = 0;
-        int ticketsWithoutOV = 0;
-        int ticketsWithoutAV = 0;
-        int ticketsWithoutFV = 0;
-
-        for (Ticket ticket : tickets) {
-            if (ticket == null) continue;
-            
-            if (ticket.getInjectedVersion() == null || 
-                (ticket.getInjectedVersion().getName() == null || 
-                 ticket.getInjectedVersion().getName().isEmpty())) {
-                ticketsWithoutIV++;
-            }
-            
-            if (ticket.getOpeningVersion() == null || 
-                (ticket.getOpeningVersion().getName() == null || 
-                 ticket.getOpeningVersion().getName().isEmpty())) {
-                ticketsWithoutOV++;
-            }
-            
-            if (ticket.getAffectedVersions() == null || ticket.getAffectedVersions().isEmpty()) {
-                ticketsWithoutAV++;
-            }
-            
-            if (ticket.getFixedVersions() == null || ticket.getFixedVersions().isEmpty()) {
-                ticketsWithoutFV++;
-            }
-        }
-
-        double percentIV = ticketsWithoutIV * 100.0 / totalTickets;
-        double percentOV = ticketsWithoutOV * 100.0 / totalTickets;
-        double percentAV = ticketsWithoutAV * 100.0 / totalTickets;
-        double percentFV = ticketsWithoutFV * 100.0 / totalTickets;
+        TicketStatistics stats = collectTicketStatistics(tickets, totalTickets);
 
         LOGGER.log(Level.INFO,
                 """
@@ -484,10 +567,120 @@ public class JiraService {
                         - Missing Fixed Versions: {7} ({8,number,#.##}%)""",
             new Object[]{
                 totalTickets,
-                ticketsWithoutIV, percentIV,
-                ticketsWithoutOV, percentOV,
-                ticketsWithoutAV, percentAV,
-                ticketsWithoutFV, percentFV
+                stats.ticketsWithoutIV, stats.percentIV,
+                stats.ticketsWithoutOV, stats.percentOV,
+                stats.ticketsWithoutAV, stats.percentAV,
+                stats.ticketsWithoutFV, stats.percentFV
             });
+    }
+
+    /**
+     * Collects statistics about tickets.
+     *
+     * @param tickets The list of tickets to analyze
+     * @param totalTickets The total number of tickets
+     * @return A TicketStatistics object with the collected statistics
+     */
+    private static TicketStatistics collectTicketStatistics(List<Ticket> tickets, int totalTickets) {
+        TicketStatistics stats = new TicketStatistics();
+        
+        for (Ticket ticket : tickets) {
+            if (ticket == null) {
+                continue;
+            }
+            
+            if (isInjectedVersionMissing(ticket)) {
+                stats.ticketsWithoutIV++;
+            }
+            
+            if (isOpeningVersionMissing(ticket)) {
+                stats.ticketsWithoutOV++;
+            }
+            
+            if (isAffectedVersionsMissing(ticket)) {
+                stats.ticketsWithoutAV++;
+            }
+            
+            if (isFixedVersionsMissing(ticket)) {
+                stats.ticketsWithoutFV++;
+            }
+        }
+        
+        // Calculate percentages
+        stats.percentIV = calculatePercentage(stats.ticketsWithoutIV, totalTickets);
+        stats.percentOV = calculatePercentage(stats.ticketsWithoutOV, totalTickets);
+        stats.percentAV = calculatePercentage(stats.ticketsWithoutAV, totalTickets);
+        stats.percentFV = calculatePercentage(stats.ticketsWithoutFV, totalTickets);
+        
+        return stats;
+    }
+
+    /**
+     * Checks if the injected version is missing from a ticket.
+     *
+     * @param ticket The ticket to check
+     * @return true if the injected version is missing, false otherwise
+     */
+    private static boolean isInjectedVersionMissing(Ticket ticket) {
+        return ticket.getInjectedVersion() == null || 
+            (ticket.getInjectedVersion().getName() == null || 
+             ticket.getInjectedVersion().getName().isEmpty());
+    }
+
+    /**
+     * Checks if the opening version is missing from a ticket.
+     *
+     * @param ticket The ticket to check
+     * @return true if the opening version is missing, false otherwise
+     */
+    private static boolean isOpeningVersionMissing(Ticket ticket) {
+        return ticket.getOpeningVersion() == null || 
+            (ticket.getOpeningVersion().getName() == null || 
+             ticket.getOpeningVersion().getName().isEmpty());
+    }
+
+    /**
+     * Checks if affected versions are missing from a ticket.
+     *
+     * @param ticket The ticket to check
+     * @return true if affected versions are missing, false otherwise
+     */
+    private static boolean isAffectedVersionsMissing(Ticket ticket) {
+        return ticket.getAffectedVersions() == null || ticket.getAffectedVersions().isEmpty();
+    }
+
+    /**
+     * Checks if fixed versions are missing from a ticket.
+     *
+     * @param ticket The ticket to check
+     * @return true if fixed versions are missing, false otherwise
+     */
+    private static boolean isFixedVersionsMissing(Ticket ticket) {
+        return ticket.getFixedVersions() == null || ticket.getFixedVersions().isEmpty();
+    }
+
+    /**
+     * Calculates a percentage.
+     *
+     * @param part The part
+     * @param total The total
+     * @return The percentage
+     */
+    private static double calculatePercentage(int part, int total) {
+        return part * 100.0 / total;
+    }
+
+    /**
+     * Helper class for storing ticket statistics.
+     */
+    private static class TicketStatistics {
+        int ticketsWithoutIV = 0;
+        int ticketsWithoutOV = 0;
+        int ticketsWithoutAV = 0;
+        int ticketsWithoutFV = 0;
+        double percentIV = 0.0;
+        double percentOV = 0.0;
+        double percentAV = 0.0;
+        double percentFV = 0.0;
     }
 }

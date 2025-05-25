@@ -10,129 +10,265 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
+/**
+ * Utility class for exporting data to CSV files.
+ */
 public class CsvExporter {
     private static final Logger LOGGER = Logger.getLogger(CsvExporter.class.getName());
-    private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd");
+    private static final String DATE_FORMAT_PATTERN = "yyyy-MM-dd";
     private static final String OUTPUT_DIR = "target";
     private static final String CSV_EXTENSION = ".csv";
     private static final String CSV_SEPARATOR = ",";
 
-    // Column selection flags for ticket export
-    public static boolean INCLUDE_KEY = true;
-    public static boolean INCLUDE_SUMMARY = false;
-    public static boolean INCLUDE_STATUS = false;
-    public static boolean INCLUDE_RESOLUTION = false;
-    public static boolean INCLUDE_CREATED_DATE = true;
-    public static boolean INCLUDE_RESOLUTION_DATE = true;
-    public static boolean INCLUDE_OPENING_VERSION = true;
-    public static boolean INCLUDE_FIXED_VERSIONS = true;
-    public static boolean INCLUDE_INJECTED_VERSION = true;
-    public static boolean INCLUDE_AFFECTED_VERSIONS = true;
-
-    // Column selection flags for version export
-    public static boolean INCLUDE_VERSION_ID = true;
-    public static boolean INCLUDE_VERSION_NAME = true;
-    public static boolean INCLUDE_VERSION_RELEASED = true;
-    public static boolean INCLUDE_VERSION_ARCHIVED = true;
-    public static boolean INCLUDE_VERSION_RELEASE_DATE = true;
-
+    private CsvExporter() {
+        // Private constructor to prevent instantiation
+    }
 
     /**
-     * Exports versions to a CSV file in the target folder.
+     * Configuration class for ticket export columns.
+     */
+    public static class TicketExportConfig {
+        private boolean includeKey = true;
+        private boolean includeSummary = false;
+        private boolean includeStatus = false;
+        private boolean includeResolution = false;
+        private boolean includeCreatedDate = true;
+        private boolean includeResolutionDate = true;
+        private boolean includeOpeningVersion = true;
+        private boolean includeFixedVersions = true;
+        private boolean includeInjectedVersion = true;
+        private boolean includeAffectedVersions = true;
+
+        public TicketExportConfig() {
+            // Default configuration
+        }
+
+        // Fluent setters
+        public TicketExportConfig setIncludeKey(boolean includeKey) {
+            this.includeKey = includeKey;
+            return this;
+        }
+
+        public TicketExportConfig setIncludeSummary(boolean includeSummary) {
+            this.includeSummary = includeSummary;
+            return this;
+        }
+
+        public TicketExportConfig setIncludeStatus(boolean includeStatus) {
+            this.includeStatus = includeStatus;
+            return this;
+        }
+
+        public TicketExportConfig setIncludeResolution(boolean includeResolution) {
+            this.includeResolution = includeResolution;
+            return this;
+        }
+
+        public TicketExportConfig setIncludeCreatedDate(boolean includeCreatedDate) {
+            this.includeCreatedDate = includeCreatedDate;
+            return this;
+        }
+
+        public TicketExportConfig setIncludeResolutionDate(boolean includeResolutionDate) {
+            this.includeResolutionDate = includeResolutionDate;
+            return this;
+        }
+
+        public TicketExportConfig setIncludeOpeningVersion(boolean includeOpeningVersion) {
+            this.includeOpeningVersion = includeOpeningVersion;
+            return this;
+        }
+
+        public TicketExportConfig setIncludeFixedVersions(boolean includeFixedVersions) {
+            this.includeFixedVersions = includeFixedVersions;
+            return this;
+        }
+
+        public TicketExportConfig setIncludeInjectedVersion(boolean includeInjectedVersion) {
+            this.includeInjectedVersion = includeInjectedVersion;
+            return this;
+        }
+
+        public TicketExportConfig setIncludeAffectedVersions(boolean includeAffectedVersions) {
+            this.includeAffectedVersions = includeAffectedVersions;
+            return this;
+        }
+    }
+
+    /**
+     * Configuration class for version export columns.
+     */
+    public static class VersionExportConfig {
+        private boolean includeId = true;
+        private boolean includeName = true;
+        private boolean includeReleased = true;
+        private boolean includeArchived = true;
+        private boolean includeReleaseDate = true;
+
+        public VersionExportConfig() {
+            // Default configuration
+        }
+
+        // Fluent setters
+        public VersionExportConfig setIncludeId(boolean includeId) {
+            this.includeId = includeId;
+            return this;
+        }
+
+        public VersionExportConfig setIncludeName(boolean includeName) {
+            this.includeName = includeName;
+            return this;
+        }
+
+        public VersionExportConfig setIncludeReleased(boolean includeReleased) {
+            this.includeReleased = includeReleased;
+            return this;
+        }
+
+        public VersionExportConfig setIncludeArchived(boolean includeArchived) {
+            this.includeArchived = includeArchived;
+            return this;
+        }
+
+        public VersionExportConfig setIncludeReleaseDate(boolean includeReleaseDate) {
+            this.includeReleaseDate = includeReleaseDate;
+            return this;
+        }
+    }
+
+    /**
+     * Exports versions to a CSV file in the target folder with default configuration.
      *
      * @param versions   List of versions to export
      * @param projectKey The project key for naming the file
      * @throws IOException If an error occurs during file creation
      */
     public static void exportVersionsAsCsv(List<Version> versions, String projectKey) throws IOException {
+        exportVersionsAsCsv(versions, projectKey, new VersionExportConfig());
+    }
+
+    /**
+     * Exports versions to a CSV file in the target folder with custom configuration.
+     *
+     * @param versions   List of versions to export
+     * @param projectKey The project key for naming the file
+     * @param config     Configuration for export columns
+     * @throws IOException If an error occurs during file creation
+     */
+    public static void exportVersionsAsCsv(List<Version> versions, String projectKey, VersionExportConfig config) throws IOException {
         String fileName = createFileName(projectKey, "versions");
         ensureDirectoryExists();
-
+        
+        // Create headers
+        List<String> headers = createVersionHeaders(config);
+        
         try (CsvWriter writer = new CsvWriter(fileName)) {
-            // Build header based on include flags
-            List<String> headers = new ArrayList<>();
-            if (INCLUDE_VERSION_ID) headers.add("ID");
-            if (INCLUDE_VERSION_NAME) headers.add("Name");
-            if (INCLUDE_VERSION_RELEASED) headers.add("Released");
-            if (INCLUDE_VERSION_ARCHIVED) headers.add("Archived");
-            if (INCLUDE_VERSION_RELEASE_DATE) headers.add("ReleaseDate");
-
+            // Write headers
             writer.writeLine(headers.toArray(new String[0]));
-
-            // Write data
+            
+            // Write each version data
             for (Version version : versions) {
-                List<String> values = new ArrayList<>();
-
-                if (INCLUDE_VERSION_ID) values.add(version.getId());
-                if (INCLUDE_VERSION_NAME) values.add(version.getName());
-                if (INCLUDE_VERSION_RELEASED) values.add(String.valueOf(version.isReleased()));
-                if (INCLUDE_VERSION_ARCHIVED) values.add(String.valueOf(version.isArchived()));
-                if (INCLUDE_VERSION_RELEASE_DATE) values.add(formatDate(version.getReleaseDate()));
-
+                List<String> values = createVersionValues(version, config);
                 writer.writeLine(values.toArray(new String[0]));
             }
         }
 
-        LOGGER.info("Exported versions CSV file: " + fileName);
+        LOGGER.log(Level.INFO, "Exported versions CSV file: {0}", fileName);
+    }
+    
+    private static List<String> createVersionHeaders(VersionExportConfig config) {
+        List<String> headers = new ArrayList<>();
+        if (config.includeId) headers.add("ID");
+        if (config.includeName) headers.add("Name");
+        if (config.includeReleased) headers.add("Released");
+        if (config.includeArchived) headers.add("Archived");
+        if (config.includeReleaseDate) headers.add("ReleaseDate");
+        return headers;
+    }
+    
+    private static List<String> createVersionValues(Version version, VersionExportConfig config) {
+        List<String> values = new ArrayList<>();
+        if (config.includeId) values.add(version.getId());
+        if (config.includeName) values.add(version.getName());
+        if (config.includeReleased) values.add(String.valueOf(version.isReleased()));
+        if (config.includeArchived) values.add(String.valueOf(version.isArchived()));
+        if (config.includeReleaseDate) values.add(formatDate(version.getReleaseDate()));
+        return values;
     }
 
-
     /**
-     * Exports tickets to a CSV file in the target folder.
+     * Exports tickets to a CSV file in the target folder with default configuration.
      *
      * @param tickets    List of tickets to export
      * @param projectKey The project key for naming the file
      * @throws IOException If an error occurs during file creation
      */
     public static void exportTicketsAsCsv(List<Ticket> tickets, String projectKey) throws IOException {
+        exportTicketsAsCsv(tickets, projectKey, new TicketExportConfig());
+    }
+
+    /**
+     * Exports tickets to a CSV file in the target folder with custom configuration.
+     *
+     * @param tickets    List of tickets to export
+     * @param projectKey The project key for naming the file
+     * @param config     Configuration for export columns
+     * @throws IOException If an error occurs during file creation
+     */
+    public static void exportTicketsAsCsv(List<Ticket> tickets, String projectKey, TicketExportConfig config) throws IOException {
         String fileName = createFileName(projectKey, "tickets");
         ensureDirectoryExists();
-
+        
+        // Create headers
+        List<String> headers = createTicketHeaders(config);
+        
         try (CsvWriter writer = new CsvWriter(fileName)) {
-            List<String> headers = getHeaders();
-
+            // Write headers
             writer.writeLine(headers.toArray(new String[0]));
-
-            // Write data
+            
+            // Write each ticket data
             for (Ticket ticket : tickets) {
-                List<String> values = new ArrayList<>();
-
-                if (INCLUDE_KEY) values.add(ticket.getKey());
-                if (INCLUDE_SUMMARY) values.add(ticket.getSummary());
-                if (INCLUDE_STATUS) values.add(ticket.getStatus());
-                if (INCLUDE_RESOLUTION) values.add(ticket.getResolution());
-                if (INCLUDE_CREATED_DATE) values.add(formatDate(ticket.getCreatedDate()));
-                if (INCLUDE_RESOLUTION_DATE) values.add(formatDate(ticket.getResolutionDate()));
-                if (INCLUDE_OPENING_VERSION) values.add(getVersionName(ticket.getOpeningVersion()));
-                if (INCLUDE_FIXED_VERSIONS) values.add(formatVersionsList(ticket.getFixedVersions()));
-                if (INCLUDE_INJECTED_VERSION) values.add(getVersionName(ticket.getInjectedVersion()));
-                if (INCLUDE_AFFECTED_VERSIONS) values.add(formatVersionsList(ticket.getAffectedVersions()));
-
+                List<String> values = createTicketValues(ticket, config);
                 writer.writeLine(values.toArray(new String[0]));
             }
         }
 
-        LOGGER.info("Exported tickets CSV file: " + fileName);
+        LOGGER.log(Level.INFO, "Exported tickets CSV file: {0}", fileName);
     }
-
-    private static List<String> getHeaders() {
+    
+    private static List<String> createTicketHeaders(TicketExportConfig config) {
         List<String> headers = new ArrayList<>();
-        if (INCLUDE_KEY) headers.add("Key");
-        if (INCLUDE_SUMMARY) headers.add("Summary");
-        if (INCLUDE_STATUS) headers.add("Status");
-        if (INCLUDE_RESOLUTION) headers.add("Resolution");
-        if (INCLUDE_CREATED_DATE) headers.add("CreatedDate");
-        if (INCLUDE_RESOLUTION_DATE) headers.add("ResolutionDate");
-        if (INCLUDE_OPENING_VERSION) headers.add("OpeningVersion");
-        if (INCLUDE_FIXED_VERSIONS) headers.add("FixedVersions");
-        if (INCLUDE_INJECTED_VERSION) headers.add("InjectedVersion");
-        if (INCLUDE_AFFECTED_VERSIONS) headers.add("AffectedVersions");
+        if (config.includeKey) headers.add("Key");
+        if (config.includeSummary) headers.add("Summary");
+        if (config.includeStatus) headers.add("Status");
+        if (config.includeResolution) headers.add("Resolution");
+        if (config.includeCreatedDate) headers.add("CreatedDate");
+        if (config.includeResolutionDate) headers.add("ResolutionDate");
+        if (config.includeOpeningVersion) headers.add("OpeningVersion");
+        if (config.includeFixedVersions) headers.add("FixedVersions");
+        if (config.includeInjectedVersion) headers.add("InjectedVersion");
+        if (config.includeAffectedVersions) headers.add("AffectedVersions");
         return headers;
     }
-
+    
+    private static List<String> createTicketValues(Ticket ticket, TicketExportConfig config) {
+        List<String> values = new ArrayList<>();
+        if (config.includeKey) values.add(ticket.getKey());
+        if (config.includeSummary) values.add(ticket.getSummary());
+        if (config.includeStatus) values.add(ticket.getStatus());
+        if (config.includeResolution) values.add(ticket.getResolution());
+        if (config.includeCreatedDate) values.add(formatDate(ticket.getCreatedDate()));
+        if (config.includeResolutionDate) values.add(formatDate(ticket.getResolutionDate()));
+        if (config.includeOpeningVersion) values.add(getVersionName(ticket.getOpeningVersion()));
+        if (config.includeFixedVersions) values.add(formatVersionsList(ticket.getFixedVersions()));
+        if (config.includeInjectedVersion) values.add(getVersionName(ticket.getInjectedVersion()));
+        if (config.includeAffectedVersions) values.add(formatVersionsList(ticket.getAffectedVersions()));
+        return values;
+    }
 
     /**
      * Creates a filename for the CSV export.
@@ -147,7 +283,10 @@ public class CsvExporter {
     private static void ensureDirectoryExists() {
         File directory = new File(OUTPUT_DIR);
         if (!directory.exists()) {
-            directory.mkdirs();
+            boolean created = directory.mkdirs();
+            if (!created) {
+                LOGGER.warning("Failed to create output directory: " + OUTPUT_DIR);
+            }
         }
     }
 
@@ -155,7 +294,11 @@ public class CsvExporter {
      * Formats a date according to the standard format or returns empty string.
      */
     private static String formatDate(Date date) {
-        return date != null ? DATE_FORMAT.format(date) : "";
+        if (date == null) {
+            return "";
+        }
+        SimpleDateFormat dateFormat = new SimpleDateFormat(DATE_FORMAT_PATTERN);
+        return dateFormat.format(date);
     }
 
     /**
