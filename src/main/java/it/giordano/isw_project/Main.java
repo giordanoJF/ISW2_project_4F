@@ -12,17 +12,17 @@ public class Main {
     private static final String PROJECT_KEY = "BOOKKEEPER";
 
     public static void main(String[] args) {
-        JiraController JiraController = new JiraController();
-        CsvController CsvController = new CsvController();
+        JiraController jiraController = new JiraController();
+        CsvController csvController = new CsvController();
 
         // Retrieve data
-        List<Version> versions = JiraController.getProjectVersions(PROJECT_KEY);
-        List<Ticket> tickets = JiraController.getProjectTickets(PROJECT_KEY);
+        List<Version> versions = jiraController.getProjectVersions(PROJECT_KEY);
+        List<Ticket> tickets = jiraController.getProjectTickets(PROJECT_KEY);
 
         // Export versions to CSV
-        CsvController.exportVersionsToCsv(versions, PROJECT_KEY);
+        csvController.exportVersionsToCsv(versions, PROJECT_KEY);
 
         // Export tickets to CSV
-        CsvController.exportTicketsToCsv(tickets, PROJECT_KEY);
+        csvController.exportTicketsToCsv(tickets, PROJECT_KEY);
     }
 }
