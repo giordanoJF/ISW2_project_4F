@@ -134,3 +134,15 @@ examples of filtering:
     temporal inconsistency
     AV and IV can be evaluated with proportion (cold start and then incremental)
     (check slides and notebook)
+
+FV are retrived using jira tickets, if multiple take the last one, if missing remove row.
+
+use proportion, remove some tickets, 33% initial tickets.
+
+-----------
+
+some exceptions are caught inside jiraservice, others by controller.
+
+too much logs.
+
+translate to english comments.

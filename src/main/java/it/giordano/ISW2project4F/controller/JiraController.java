@@ -59,6 +59,7 @@ public class JiraController {
             // Date parsing errors
             LOGGER.log(Level.SEVERE, errorMessage + ": Date format error", e);
             System.err.println("Error parsing date: " + errorMessage + ": " + e.getMessage());
+            System.exit(1);
             return null;
         }
         catch (JSONException e) {
@@ -79,6 +80,6 @@ public class JiraController {
 
     @FunctionalInterface
     private interface ExceptionHandlingSupplier<T> {
-        T get() throws IOException, ParseException, JSONException;
+        T get() throws IOException, ParseException, JSONException, Exception;
     }
 }
