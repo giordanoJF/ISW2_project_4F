@@ -160,3 +160,5 @@ print a better log
 check new refactored code
 
 what if AVs is not empty but some AV are missed?
+
+JiraService.java could be improved by adding more params checks on missing/null values, maybe with a focus on public methods.
