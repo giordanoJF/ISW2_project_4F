@@ -31,8 +31,8 @@ public class JiraController {
      * @param projectKey The key of the project
      * @return List of tickets
      */
-    public List<Ticket> getProjectTickets(String projectKey) {
-        return executeWithErrorHandling(() -> JiraService.getProjectTickets(projectKey),
+    public List<Ticket> getProjectTickets(String projectKey, List<Version> versions) {
+        return executeWithErrorHandling(() -> JiraService.getProjectTickets(projectKey, versions),
                 "Error retrieving tickets for " + projectKey);
     }
 

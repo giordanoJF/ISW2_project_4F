@@ -17,7 +17,7 @@ public class Main {
 
         // Retrieve data
         List<Version> versions = jiraController.getProjectVersions(PROJECT_KEY);
-        List<Ticket> tickets = jiraController.getProjectTickets(PROJECT_KEY);
+        List<Ticket> tickets = jiraController.getProjectTickets(PROJECT_KEY, versions);
 
         // Export versions to CSV
         csvController.exportVersionsToCsv(versions, PROJECT_KEY);

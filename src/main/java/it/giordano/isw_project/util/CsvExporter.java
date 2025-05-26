@@ -24,8 +24,9 @@ public class CsvExporter {
     private static final String CSV_EXTENSION = ".csv";
     private static final String CSV_SEPARATOR = ",";
 
+    // Private constructor to prevent instantiation
     private CsvExporter() {
-        // Private constructor to prevent instantiation
+        throw new IllegalStateException("Utility class");
     }
 
     /**

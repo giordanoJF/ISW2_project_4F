@@ -64,7 +64,7 @@ public class JiraService {
      * Recupera tutte le versioni di un progetto da Jira.
      *
      * @param projectKey Il codice del progetto
-     * @return Lista delle versioni del progetto. Può essere vuota se non ci sono versioni.
+     * @return Lista delle versioni del progetto. Può essere vuota se non ci sono versioni. Può contenere versioni con informazioni mancanti
      * @throws IOException Se si verifica un errore durante la richiesta HTTP
      */
     public static List<Version> getProjectVersions(String projectKey) throws IOException {
@@ -123,7 +123,7 @@ public class JiraService {
                 SimpleDateFormat dateFormat = new SimpleDateFormat(VERSION_DATE_FORMAT_PATTERN);
                 version.setReleaseDate(parseDate(dateStr, dateFormat));
             } catch (ParseException e) {
-                LOGGER.warning("Failed to parse release date for version " + version.getName() + ": " + dateStr);
+                LOGGER.log(Level.WARNING,"Failed to parse release date for version {0} : {1}", new Object[]{version.getName(), dateStr});
                 version.setReleaseDate(null);
             }
         } else {
@@ -140,20 +140,18 @@ public class JiraService {
      * @return Lista di ticket che soddisfano i criteri
      * @throws IOException Se si verifica un errore durante la richiesta HTTP
      */
-    public static List<Ticket> getProjectTickets(String projectKey) throws IOException {
+    public static List<Ticket> getProjectTickets(String projectKey, List<Version> versions) throws IOException {
         if (projectKey == null || projectKey.isEmpty()) {
             LOGGER.warning("Project key is null or empty");
             return new ArrayList<>();
         }
-
-        List<Ticket> tickets = new ArrayList<>();
-        List<Version> versions = getProjectVersions(projectKey);
-        Map<String, Version> versionMap = createVersionMap(versions);
-
-        if (versions.isEmpty()) {
-            LOGGER.log(Level.WARNING, "No versions found for project {0}. Cannot retrieve tickets.", projectKey);
-            return tickets;
+        if (versions == null || versions.isEmpty()) {
+            LOGGER.warning("Versions list is null or empty");
+            return new ArrayList<>();
         }
+
+        List<Ticket> tickets;
+        Map<String, Version> versionMap = createVersionMap(versions);
 
         String jql = buildJqlQuery(projectKey);
         String encodedJql = java.net.URLEncoder.encode(jql, StandardCharsets.UTF_8);
