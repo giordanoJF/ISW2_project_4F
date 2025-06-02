@@ -33,12 +33,8 @@ public class TicketCleaner {
         }
         
         for (Ticket ticket : tickets) {
+
             multipleToSingleFixedVersions(ticket);
-        }
-
-        //do proportion here
-
-        removeInvalidTickets(tickets);
 
             // If multiple injected versions (though this shouldn't happen based on model),
             // we would keep only the oldest one
@@ -47,11 +43,18 @@ public class TicketCleaner {
             // If we had multiple opening versions, keep only the oldest one
             // Currently the model doesn't support multiple opening versions directly,
             // but this is a safeguard for future changes
+        }
 
-//        coldStart(needProportion, coldStartTickets); //20%
-//        incremental(needProportion); //80%
-//        setAffectedVersions(needProportion, projectVersions);
-//        tickets.addAll(needProportion);
+//      DO PROPORTION HERE
+//      coldStart(needProportion, coldStartTickets); //20%
+//      incremental(needProportion); //80%
+//      setAffectedVersions(needProportion, projectVersions);
+//      tickets.addAll(needProportion);
+        removeInvalidTickets(tickets);
+
+
+
+
         
 
     }
