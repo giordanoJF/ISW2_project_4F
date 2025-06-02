@@ -45,6 +45,7 @@ public class TicketCleaner {
             // but this is a safeguard for future changes
         }
 
+        //need this because some tickets have no opening version
         removeInvalidTickets(tickets);
 
         // Sort tickets by opening version date
@@ -72,6 +73,11 @@ public class TicketCleaner {
     private static void setAffectedVersionsAfterProportion(List<Ticket> tickets, List<Version> targetProjectVersions) {
         for (Ticket ticket : tickets) {
             if (ticket.getAffectedVersions() == null || ticket.getAffectedVersions().isEmpty()) {
+                if (ticket.getInjectedVersion() == null) {
+                    // Skip tickets without injected version
+                    continue;
+                }
+
                 List<Version> affectedVersions = new ArrayList<>();
                 Version injectedVersion = ticket.getInjectedVersion();
                 Version fixedVersion = ticket.getFixedVersions().getFirst();
@@ -85,6 +91,7 @@ public class TicketCleaner {
             }
         }
     }
+
 
     private static void proportionWithIncremental(List<Ticket> tickets, int splitIndex, List<Version> targetProjectVersions) {
         for (Ticket ticket : tickets.subList(splitIndex, tickets.size()) ) {

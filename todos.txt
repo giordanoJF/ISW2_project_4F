@@ -176,3 +176,7 @@ check ticket cleaner logic
 remake documentation
 
 check for common methods and reuse them
+
+remove tickets that proportion cannot predict because of no suitable versions
+
+check AVs after using proportion are in range

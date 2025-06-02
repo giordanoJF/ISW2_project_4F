@@ -20,7 +20,7 @@ public class Main {
         JiraController jiraController = new JiraController();
         TicketStatsController ticketStatsController = new TicketStatsController();
         TicketCleanerController ticketCleanerController = new TicketCleanerController();
-//        CsvController csvController = new CsvController();
+        CsvController csvController = new CsvController();
 
         // Retrieve data
         List<Version> versions = jiraController.getProjectVersions(PROJECT_KEY);
@@ -33,10 +33,10 @@ public class Main {
         ticketCleanerController.cleanTickets(tickets, coldStartTickets, versions);
         ticketStatsController.generateTicketStatistics(tickets);
 
-//        // Export versions to CSV
-//        csvController.exportVersionsToCsv(versions, PROJECT_KEY);
+        // Export versions to CSV
+        csvController.exportVersionsToCsv(versions, PROJECT_KEY);
 //
-//        // Export tickets to CSV
-//        csvController.exportTicketsToCsv(tickets, PROJECT_KEY);
+        // Export tickets to CSV
+        csvController.exportTicketsToCsv(tickets, PROJECT_KEY);
     }
 }

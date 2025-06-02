@@ -118,19 +118,31 @@ public class Proportion {
         return numerator / denominator;
     }
 
+    /**
+     * Predicts the injected version of a ticket based on a proportion value.
+     *
+     * @param ticket         The ticket for which to predict the injected version
+     * @param p              The proportion value to use for prediction
+     * @param projectVersions The list of all project versions
+     * @return The predicted injected version, or null if a prediction cannot be made
+     */
     public static Version predictIV(Ticket ticket, double p, List<Version> projectVersions) {
+        // Validate inputs
         if (ticket == null || ticket.getFixedVersions() == null || ticket.getFixedVersions().isEmpty()
                 || ticket.getOpeningVersion() == null || projectVersions == null || projectVersions.isEmpty()) {
             return null;
         }
 
+        // Get the latest fixed version and opening version
         Version fv = Misc.getLatestVersion(ticket.getFixedVersions());
         Version ov = ticket.getOpeningVersion();
 
+        // Ensure versions have release dates
         if (fv == null || fv.getReleaseDate() == null || ov.getReleaseDate() == null) {
             return null;
         }
 
+        // Get timestamps for calculations
         double fvTime = fv.getReleaseDate().getTime();
         double ovTime = ov.getReleaseDate().getTime();
 
@@ -141,6 +153,17 @@ public class Proportion {
         // Find the latest version released on or before the predicted date
         Version latestVersionBeforePrediction = null;
 
+        // Find the oldest version in the project
+        Version oldestVersion = null;
+        for (Version version : projectVersions) {
+            if (version.getReleaseDate() != null) {
+                if (oldestVersion == null || version.getReleaseDate().before(oldestVersion.getReleaseDate())) {
+                    oldestVersion = version;
+                }
+            }
+        }
+
+        // Find the best matching version for the predicted date
         for (Version version : projectVersions) {
             if (version.getReleaseDate() == null) {
                 continue;
@@ -156,8 +179,18 @@ public class Proportion {
             }
         }
 
+        // Log a warning if no suitable version was found
+        if (latestVersionBeforePrediction == null) {
+            LOGGER.warning("No suitable version found for ticket " + ticket.getKey() +
+                    " - Predicted date: " + predictedDate +
+                    " - Oldest version date: " +
+                    (oldestVersion != null ? oldestVersion.getReleaseDate() : "No versions with date"));
+        }
+
         return latestVersionBeforePrediction;
     }
+
+
 
 
 }

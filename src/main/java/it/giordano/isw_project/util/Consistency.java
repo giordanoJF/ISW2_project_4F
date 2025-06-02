@@ -81,6 +81,13 @@ public class Consistency {
             return true;
         }
 
+        // Check if injected = fixed, we skip it because the bug is never produced
+        if (ticket.getInjectedVersion() != null && ticket.getFixedVersions() != null) {
+            if (ticket.getInjectedVersion().getReleaseDate().equals(fixedVersion.getReleaseDate())) {
+                return true;
+            }
+        }
+
         return false;
     }
 
