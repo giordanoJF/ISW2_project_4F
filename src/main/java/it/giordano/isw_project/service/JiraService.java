@@ -2,6 +2,9 @@ package it.giordano.isw_project.service;
 
 import it.giordano.isw_project.model.Ticket;
 import it.giordano.isw_project.model.Version;
+import it.giordano.isw_project.util.Misc;
+import it.giordano.isw_project.util.QueryBuilder;
+import it.giordano.isw_project.util.UrlRequests;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -24,7 +27,7 @@ import java.util.logging.Logger;
  * Handles retrieving project versions and tickets.
  */
 public class JiraService {
-    private static final String JIRA_BASE_URL = "https://issues.apache.org/jira/rest/api/2";
+    public static final String JIRA_BASE_URL = "https://issues.apache.org/jira/rest/api/2";
     private static final Logger LOGGER = Logger.getLogger(JiraService.class.getName());
 
     // Campi JSON per le versioni
@@ -46,7 +49,7 @@ public class JiraService {
     private static final String FIELD_VERSIONS = "versions"; // AV = Affected Versions
 
     // Costanti per la paginazione e struttura JSON
-    private static final int MAX_RESULTS_PER_PAGE = 100;
+    public static final int MAX_RESULTS_PER_PAGE = 100;
     private static final String TOTAL = "total";
     private static final String ISSUES = "issues";
     private static final String FIELDS = "fields";
@@ -75,7 +78,7 @@ public class JiraService {
 
         List<Version> versions = new ArrayList<>();
         String url = JIRA_BASE_URL + "/project/" + projectKey + "/versions";
-        String jsonResponse = executeGetRequest(url);
+        String jsonResponse = UrlRequests.executeGetRequest(url);
 
         if (jsonResponse == null || jsonResponse.isEmpty()) {
             LOGGER.warning("Empty response from Jira API for project versions");
@@ -121,7 +124,7 @@ public class JiraService {
         if (!dateStr.isEmpty()) {
             try {
                 SimpleDateFormat dateFormat = new SimpleDateFormat(VERSION_DATE_FORMAT_PATTERN);
-                version.setReleaseDate(parseDate(dateStr, dateFormat));
+                version.setReleaseDate(Misc.parseDate(dateStr, dateFormat));
             } catch (ParseException e) {
                 LOGGER.log(Level.WARNING,"Failed to parse release date for version {0} : {1}", new Object[]{version.getName(), dateStr});
                 version.setReleaseDate(null);
@@ -151,26 +154,13 @@ public class JiraService {
         }
 
         List<Ticket> tickets;
-        Map<String, Version> versionMap = createVersionMap(versions);
+        Map<String, Version> versionMap = Misc.createVersionMap(versions);
 
-        String jql = buildJqlQuery(projectKey);
+        String jql = QueryBuilder.buildJqlQuery(projectKey);
         String encodedJql = java.net.URLEncoder.encode(jql, StandardCharsets.UTF_8);
         tickets = fetchAllTickets(encodedJql, versionMap);
 
         return tickets;
-    }
-
-    /**
-     * Builds the JQL query for retrieving tickets.
-     *
-     * @param projectKey The project key
-     * @return JQL query string
-     */
-    private static String buildJqlQuery(String projectKey) {
-        return "project=" + projectKey +
-                " AND issuetype=Bug" +
-                " AND resolution=Fixed" +
-                " AND status in (Closed, Resolved)";
     }
 
     /**
@@ -188,8 +178,8 @@ public class JiraService {
         boolean firstPage = true;
 
         do {
-            String url = buildTicketsUrl(encodedJql, startAt);
-            String jsonResponse = executeGetRequest(url);
+            String url = QueryBuilder.buildTicketsUrl(encodedJql, startAt);
+            String jsonResponse = UrlRequests.executeGetRequest(url);
 
             if (jsonResponse == null || jsonResponse.isEmpty()) {
                 LOGGER.warning("Empty response from Jira API for tickets search");
@@ -219,20 +209,6 @@ public class JiraService {
     }
 
     /**
-     * Builds the URL for the tickets search API.
-     *
-     * @param encodedJql The encoded JQL query
-     * @param startAt The pagination start index
-     * @return The URL for the tickets search API
-     */
-    private static String buildTicketsUrl(String encodedJql, int startAt) {
-        return JIRA_BASE_URL + "/search?jql=" + encodedJql +
-                "&startAt=" + startAt +
-                "&maxResults=" + MAX_RESULTS_PER_PAGE +
-                "&fields=key,summary,description,created,resolutiondate,status,resolution,versions,fixVersions";
-    }
-
-    /**
      * Processes the issues array and adds tickets to the list.
      *
      * @param issuesArray The JSON array of issues
@@ -247,28 +223,6 @@ public class JiraService {
                 tickets.add(ticket);
             }
         }
-    }
-
-    /**
-     * Crea una mappa di nomi di versione su oggetti Version.
-     *
-     * @param versions Lista di oggetti Version da mappare
-     * @return Mappa con nomi di versione come chiavi e oggetti Version come valori
-     */
-    private static Map<String, Version> createVersionMap(List<Version> versions) {
-        Map<String, Version> versionMap = new HashMap<>();
-        
-        if (versions == null || versions.isEmpty()) {
-            return versionMap;
-        }
-        
-        for (Version version : versions) {
-            if (version != null && version.getName() != null && !version.getName().isEmpty()) {
-                versionMap.put(version.getName(), version);
-            }
-        }
-        
-        return versionMap;
     }
 
     /**
@@ -324,7 +278,7 @@ public class JiraService {
         String createdDateStr = fields.optString(FIELD_CREATED_DATE, "");
         if (!createdDateStr.isEmpty()) {
             try {
-                ticket.setCreatedDate(parseDate(createdDateStr, dateFormat));
+                ticket.setCreatedDate(Misc.parseDate(createdDateStr, dateFormat));
             } catch (ParseException e) {
                 LOGGER.warning("Failed to parse created date for ticket " + ticket.getKey() + ": " + createdDateStr);
             }
@@ -333,7 +287,7 @@ public class JiraService {
         String resolutionDateStr = fields.optString(FIELD_RESOLUTION_DATE, "");
         if (!resolutionDateStr.isEmpty()) {
             try {
-                ticket.setResolutionDate(parseDate(resolutionDateStr, dateFormat));
+                ticket.setResolutionDate(Misc.parseDate(resolutionDateStr, dateFormat));
             } catch (ParseException e) {
                 LOGGER.warning("Failed to parse resolution date for ticket " + ticket.getKey() + ": " + resolutionDateStr);
             }
@@ -432,40 +386,10 @@ public class JiraService {
             return;
         }
 
-        Version oldestVersion = findOldestVersionWithReleaseDate(affectedVersions);
+        Version oldestVersion = Misc.findOldestVersionWithReleaseDate(affectedVersions);
         if (oldestVersion != null) {
             ticket.setInjectedVersion(oldestVersion);
         }
-    }
-
-    /**
-     * Finds the oldest version with a release date.
-     *
-     * @param versions The list of versions to search
-     * @return The oldest version with a release date, or null if none found
-     */
-    private static Version findOldestVersionWithReleaseDate(List<Version> versions) {
-        Version oldestVersion = null;
-        
-        // Find the first version with a release date
-        for (Version version : versions) {
-            if (version != null && version.getReleaseDate() != null) {
-                oldestVersion = version;
-                break;
-            }
-        }
-        
-        // Find the oldest version
-        if (oldestVersion != null) {
-            for (Version version : versions) {
-                if (version != null && version.getReleaseDate() != null && 
-                    version.getReleaseDate().before(oldestVersion.getReleaseDate())) {
-                    oldestVersion = version;
-                }
-            }
-        }
-        
-        return oldestVersion;
     }
 
     /**
@@ -495,51 +419,7 @@ public class JiraService {
         ticket.setOpeningVersion(latestVersion);
     }
 
-    /**
-     * Analizza una stringa di data utilizzando il formato di data fornito.
-     *
-     * @param dateString La stringa di data da analizzare
-     * @param dateFormat Il formato di data da utilizzare
-     * @return Oggetto Date analizzato dalla stringa di data Jira, o null se la stringa di data è null o vuota
-     * @throws ParseException Se la stringa di data non può essere analizzata
-     */
-    private static Date parseDate(String dateString, SimpleDateFormat dateFormat) throws ParseException {
-        if (dateString == null || dateString.isEmpty()) {
-            return null;
-        }
-        return dateFormat.parse(dateString);
-    }
 
-    /**
-     * Esegue una richiesta GET all'URL specificato.
-     *
-     * @param url L'URL a cui inviare la richiesta GET
-     * @return La risposta come stringa
-     * @throws IOException Se si verifica un errore durante la richiesta HTTP
-     */
-    private static String executeGetRequest(String url) throws IOException {
-        if (url == null || url.isEmpty()) {
-            throw new IllegalArgumentException("URL cannot be null or empty");
-        }
-        
-        try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
-            HttpGet httpGet = new HttpGet(url);
-            try (CloseableHttpResponse response = httpClient.execute(httpGet)) {
-                int statusCode = response.getStatusLine().getStatusCode();
-                if (statusCode != 200) {
-                    LOGGER.log(Level.WARNING, "HTTP request failed with status: {0}", statusCode);
-                    return null;
-                }
-                
-                HttpEntity entity = response.getEntity();
-                if (entity == null) {
-                    return null;
-                }
-                
-                return EntityUtils.toString(entity);
-            }
-        }
-    }
 
 
 }

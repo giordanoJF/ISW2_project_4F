@@ -135,4 +135,8 @@ public class Ticket {
         }
         return names;
     }
+
+    public void setAffectedVersions(List<Version> affectedVersions) {
+        this.affectedVersions = affectedVersions;
+    }
 }

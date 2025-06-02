@@ -22,8 +22,8 @@ public class TicketCleanerController {
      *
      * @param tickets the list of tickets to clean
      */
-    public void cleanTickets(List<Ticket> tickets) {
-        executeWithErrorHandling(() -> TicketCleaner.cleanTargetTickets(tickets),
+    public void cleanTickets(List<Ticket> tickets, List<Ticket> coldStartTickets, List<Version> targetProjectVersions) {
+        executeWithErrorHandling(() -> TicketCleaner.cleanTargetTickets(tickets, coldStartTickets, targetProjectVersions),
                 "Error cleaning tickets");
     }
 

@@ -172,3 +172,7 @@ remove logs, check if systemexit, nullvalues/missingvalues.
 some methods in some classes should be extracted.
 
 check ticket cleaner logic
+
+remake documentation
+
+check for common methods and reuse them

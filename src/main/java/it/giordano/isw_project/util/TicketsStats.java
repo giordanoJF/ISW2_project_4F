@@ -58,85 +58,30 @@ public class TicketsStats {
                 continue;
             }
 
-            if (isInjectedVersionMissing(ticket)) {
+            if (Consistency.isInjectedVersionMissing(ticket)) {
                 stats.ticketsWithoutIV++;
             }
 
-            if (isOpeningVersionMissing(ticket)) {
+            if (Consistency.isOpeningVersionMissing(ticket)) {
                 stats.ticketsWithoutOV++;
             }
 
-            if (isAffectedVersionsMissing(ticket)) {
+            if (Consistency.isAffectedVersionsMissing(ticket)) {
                 stats.ticketsWithoutAV++;
             }
 
-            if (isFixedVersionsMissing(ticket)) {
+            if (Consistency.isFixedVersionsMissing(ticket)) {
                 stats.ticketsWithoutFV++;
             }
         }
 
         // Calculate percentages
-        stats.percentIV = calculatePercentage(stats.ticketsWithoutIV, totalTickets);
-        stats.percentOV = calculatePercentage(stats.ticketsWithoutOV, totalTickets);
-        stats.percentAV = calculatePercentage(stats.ticketsWithoutAV, totalTickets);
-        stats.percentFV = calculatePercentage(stats.ticketsWithoutFV, totalTickets);
+        stats.percentIV = Misc.calculatePercentage(stats.ticketsWithoutIV, totalTickets);
+        stats.percentOV = Misc.calculatePercentage(stats.ticketsWithoutOV, totalTickets);
+        stats.percentAV = Misc.calculatePercentage(stats.ticketsWithoutAV, totalTickets);
+        stats.percentFV = Misc.calculatePercentage(stats.ticketsWithoutFV, totalTickets);
 
         return stats;
-    }
-
-    /**
-     * Checks if the injected version is missing from a ticket.
-     *
-     * @param ticket The ticket to check
-     * @return true if the injected version is missing, false otherwise
-     */
-    private static boolean isInjectedVersionMissing(Ticket ticket) {
-        return ticket.getInjectedVersion() == null ||
-                (ticket.getInjectedVersion().getName() == null ||
-                        ticket.getInjectedVersion().getName().isEmpty());
-    }
-
-    /**
-     * Checks if the opening version is missing from a ticket.
-     *
-     * @param ticket The ticket to check
-     * @return true if the opening version is missing, false otherwise
-     */
-    private static boolean isOpeningVersionMissing(Ticket ticket) {
-        return ticket.getOpeningVersion() == null ||
-                (ticket.getOpeningVersion().getName() == null ||
-                        ticket.getOpeningVersion().getName().isEmpty());
-    }
-
-    /**
-     * Checks if affected versions are missing from a ticket.
-     *
-     * @param ticket The ticket to check
-     * @return true if affected versions are missing, false otherwise
-     */
-    private static boolean isAffectedVersionsMissing(Ticket ticket) {
-        return ticket.getAffectedVersions() == null || ticket.getAffectedVersions().isEmpty();
-    }
-
-    /**
-     * Checks if fixed versions are missing from a ticket.
-     *
-     * @param ticket The ticket to check
-     * @return true if fixed versions are missing, false otherwise
-     */
-    private static boolean isFixedVersionsMissing(Ticket ticket) {
-        return ticket.getFixedVersions() == null || ticket.getFixedVersions().isEmpty();
-    }
-
-    /**
-     * Calculates a percentage.
-     *
-     * @param part The part
-     * @param total The total
-     * @return The percentage
-     */
-    private static double calculatePercentage(int part, int total) {
-        return part * 100.0 / total;
     }
 
     /**

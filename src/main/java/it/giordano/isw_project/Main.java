@@ -14,6 +14,7 @@ import java.util.List;
 
 public class Main {
     private static final String PROJECT_KEY = "BOOKKEEPER";
+    private static final String COLD_START_PROJECT_KEY = "OPENJPA";
 
     public static void main(String[] args) {
         JiraController jiraController = new JiraController();
@@ -24,10 +25,12 @@ public class Main {
         // Retrieve data
         List<Version> versions = jiraController.getProjectVersions(PROJECT_KEY);
         List<Ticket> tickets = jiraController.getProjectTickets(PROJECT_KEY, versions);
+        List<Version> coldStartVersions = jiraController.getProjectVersions(COLD_START_PROJECT_KEY);
+        List<Ticket> coldStartTickets = jiraController.getProjectTickets(COLD_START_PROJECT_KEY, coldStartVersions);
         ticketStatsController.generateTicketStatistics(tickets);
 
         //clean data
-        ticketCleanerController.cleanTickets(tickets);
+        ticketCleanerController.cleanTickets(tickets, coldStartTickets, versions);
         ticketStatsController.generateTicketStatistics(tickets);
 
 //        // Export versions to CSV
