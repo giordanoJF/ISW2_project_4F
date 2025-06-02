@@ -33,15 +33,25 @@ public class TicketStatsController {
     private void executeWithErrorHandling(ExceptionHandlingSupplier supplier, String errorMessage) {
         try {
             supplier.get();
+        } catch (NullPointerException e) {
+            LOGGER.log(Level.SEVERE, "{0}: Null value encountered - {1}", new Object[]{errorMessage, e.getMessage()});
+            System.exit(1);
+        } catch (ArithmeticException e) {
+            LOGGER.log(Level.SEVERE, "{0}: Calculation error - {1}", new Object[]{errorMessage, e.getMessage()});
+            System.exit(1);
+        } catch (IllegalArgumentException e) {
+            LOGGER.log(Level.SEVERE, "{0}: Invalid argument - {1}", new Object[]{errorMessage, e.getMessage()});
+            System.exit(1);
         } catch (Exception e) {
-            // General errors are critical - log and terminate
-            LOGGER.log(Level.SEVERE, "{0}: {1}", new Object[]{errorMessage, e.getMessage()});
+            // Per altre eccezioni non previste
+            LOGGER.log(Level.SEVERE, "{0}: Unexpected error - {1}", new Object[]{errorMessage, e.getMessage()});
             System.exit(1);
         }
+
     }
 
     @FunctionalInterface
     private interface ExceptionHandlingSupplier {
-        void get() throws Exception;
+        void get() throws NullPointerException, ArithmeticException, IllegalArgumentException;
     }
 }

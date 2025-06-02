@@ -1,11 +1,15 @@
 package it.giordano.isw_project.controller;
 
 import it.giordano.isw_project.model.Ticket;
+import it.giordano.isw_project.model.Version;
 import it.giordano.isw_project.util.TicketCleaner;
 
+import java.util.ConcurrentModificationException;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
 
 /**
  * Controller for ticket cleaning operations.
@@ -17,10 +21,9 @@ public class TicketCleanerController {
      * Cleans a list of tickets by applying validation rules and removing invalid entries.
      *
      * @param tickets the list of tickets to clean
-     * @return the cleaned list of tickets
      */
-    public List<Ticket> cleanTickets(List<Ticket> tickets) {
-        return executeWithErrorHandling(() -> TicketCleaner.cleanTickets(tickets),
+    public void cleanTickets(List<Ticket> tickets) {
+        executeWithErrorHandling(() -> TicketCleaner.cleanTargetTickets(tickets),
                 "Error cleaning tickets");
     }
 
@@ -30,22 +33,31 @@ public class TicketCleanerController {
      *
      * @param supplier     The function to execute
      * @param errorMessage The error message to log if an exception occurs
-     * @param <T>          The return type of the function
-     * @return The result of the function
      */
-    private <T> T executeWithErrorHandling(ExceptionHandlingSupplier<T> supplier, String errorMessage) {
+    private void executeWithErrorHandling(ExceptionHandlingSupplier supplier, String errorMessage) {
         try {
-            return supplier.get();
-        } catch (Exception e) {
-            // General errors are critical - log and terminate
-            LOGGER.log(Level.SEVERE, "{0}: {1}", new Object[]{errorMessage, e.getMessage()});
+            supplier.get();
+        } catch (NullPointerException e) {
+            LOGGER.log(Level.SEVERE, "{0}: Null value encountered - {1}", new Object[]{errorMessage, e.getMessage()});
             System.exit(1);
-            return null;
+        } catch (NoSuchElementException e) {
+            LOGGER.log(Level.SEVERE, "{0}: Element not found - {1}", new Object[]{errorMessage, e.getMessage()});
+            System.exit(1);
+        } catch (IllegalArgumentException e) {
+            LOGGER.log(Level.SEVERE, "{0}: Invalid argument - {1}", new Object[]{errorMessage, e.getMessage()});
+            System.exit(1);
+        } catch (ConcurrentModificationException e) {
+            LOGGER.log(Level.SEVERE, "{0}: Concurrent modification error - {1}", new Object[]{errorMessage, e.getMessage()});
+            System.exit(1);
+        } catch (Exception e) {
+            // Catch-all for other unexpected exceptions
+            LOGGER.log(Level.SEVERE, "{0}: Unexpected error - {1}", new Object[]{errorMessage, e.getMessage()});
+            System.exit(1);
         }
     }
 
     @FunctionalInterface
-    private interface ExceptionHandlingSupplier<T> {
-        T get() throws Exception;
+    private interface ExceptionHandlingSupplier {
+        void get() throws NullPointerException, NoSuchElementException, IllegalArgumentException, ConcurrentModificationException;
     }
 }

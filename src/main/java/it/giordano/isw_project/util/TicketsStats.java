@@ -9,6 +9,10 @@ import java.util.logging.Logger;
 public class TicketsStats {
     private static final Logger LOGGER = Logger.getLogger(TicketsStats.class.getName());
 
+    private TicketsStats() {
+        throw new IllegalStateException("Utility class");
+    }
+
     /**
      * Registra le statistiche sui ticket.
      *

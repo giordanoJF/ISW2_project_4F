@@ -38,7 +38,7 @@ public class CsvExporter {
         private boolean includeStatus = false;
         private boolean includeResolution = false;
         private boolean includeCreatedDate = true;
-        private boolean includeResolutionDate = true;
+        private boolean includeResolutionDate = false;
         private boolean includeOpeningVersion = true;
         private boolean includeFixedVersions = true;
         private boolean includeInjectedVersion = true;
@@ -106,8 +106,8 @@ public class CsvExporter {
     public static class VersionExportConfig {
         private boolean includeId = true;
         private boolean includeName = true;
-        private boolean includeReleased = true;
-        private boolean includeArchived = true;
+        private boolean includeReleased = false;
+        private boolean includeArchived = false;
         private boolean includeReleaseDate = true;
 
         public VersionExportConfig() {

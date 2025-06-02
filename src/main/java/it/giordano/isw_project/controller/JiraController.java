@@ -66,6 +66,12 @@ public class JiraController {
             System.exit(1);
             return null;
         }
+        catch (Exception e) {
+            // Per altre eccezioni non previste
+            LOGGER.log(Level.SEVERE, "{0}: Unexpected error - {1}", new Object[]{errorMessage, e.getMessage()});
+            System.exit(1);
+            return null;
+        }
     }
 
     @FunctionalInterface

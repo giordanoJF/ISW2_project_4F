@@ -162,3 +162,13 @@ check new refactored code
 what if AVs is not empty but some AV are missed?
 
 JiraService.java could be improved by adding more params checks on missing/null values, maybe with a focus on public methods.
+
+consistence between logger.log and logger.warning
+
+check consistency of javadoc
+
+remove logs, check if systemexit, nullvalues/missingvalues.
+
+some methods in some classes should be extracted.
+
+check ticket cleaner logic
