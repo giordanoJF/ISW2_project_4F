@@ -180,3 +180,7 @@ check for common methods and reuse them
 remove tickets that proportion cannot predict because of no suitable versions
 
 check AVs after using proportion are in range
+
+switching bookkeeper with openjpa is bugged
+
+count unsuitable and compare with all null rows
