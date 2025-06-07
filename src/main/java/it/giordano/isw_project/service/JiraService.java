@@ -24,7 +24,9 @@ import java.util.logging.Logger;
 
 /**
  * Service class for interacting with Jira API.
- * Handles retrieving project versions and tickets.
+ * Provides methods to retrieve project versions and tickets from Jira.
+ * Handles HTTP requests, JSON parsing, and data mapping to domain objects.
+ * Includes pagination support for large result sets.
  */
 public class JiraService {
     public static final String JIRA_BASE_URL = "https://issues.apache.org/jira/rest/api/2";
@@ -58,17 +60,21 @@ public class JiraService {
     private static final String TICKET_DATE_FORMAT_PATTERN = "yyyy-MM-dd'T'HH:mm:ss.SSSZ";
     private static final String VERSION_DATE_FORMAT_PATTERN = "yyyy-MM-dd";
 
-    // Private constructor to prevent instantiation
+    /**
+     * Private constructor to prevent instantiation of utility class.
+     *
+     * @throws IllegalStateException if an attempt is made to instantiate this class
+     */
     private JiraService() {
         throw new IllegalStateException("Utility class");
     }
 
     /**
-     * Recupera tutte le versioni di un progetto da Jira.
+     * Retrieves all versions of a project from Jira.
      *
-     * @param projectKey Il codice del progetto
-     * @return Lista delle versioni del progetto. Può essere vuota se non ci sono versioni. Può contenere versioni con informazioni mancanti
-     * @throws IOException Se si verifica un errore durante la richiesta HTTP
+     * @param projectKey The project identifier code
+     * @return List of versions for the project. May be empty if no versions exist or contain versions with missing information.
+     * @throws IOException If an HTTP error occurs during the request
      */
     public static List<Version> getProjectVersions(String projectKey) throws IOException {
         if (projectKey == null || projectKey.isEmpty()) {
@@ -104,10 +110,10 @@ public class JiraService {
     }
 
     /**
-     * Converte un oggetto JSON in un oggetto Version.
+     * Converts a JSON object into a Version object.
      *
-     * @param versionJson L'oggetto JSON contenente le informazioni sulla versione
-     * @return Oggetto Version popolato con dati dal JSON. Non restituisce mai null.
+     * @param versionJson The JSON object containing version information
+     * @return A Version object populated with data from the JSON. Never returns null.
      */
     private static Version parseVersionFromJson(JSONObject versionJson) {
         if (versionJson == null) {
@@ -137,11 +143,12 @@ public class JiraService {
     }
 
     /**
-     * Recupera i ticket di bug da Jira che sono stati risolti e chiusi/risolti.
+     * Retrieves bug tickets from Jira that have been resolved and closed/resolved.
      *
-     * @param projectKey Il codice del progetto
-     * @return Lista di ticket che soddisfano i criteri
-     * @throws IOException Se si verifica un errore durante la richiesta HTTP
+     * @param projectKey The project identifier code
+     * @param versions List of project versions to associate with tickets
+     * @return List of tickets that meet the criteria
+     * @throws IOException If an HTTP error occurs during the request
      */
     public static List<Ticket> getProjectTickets(String projectKey, List<Version> versions) throws IOException {
         if (projectKey == null || projectKey.isEmpty()) {
@@ -164,11 +171,11 @@ public class JiraService {
     }
 
     /**
-     * Fetches all tickets from Jira API with pagination.
+     * Fetches all tickets from Jira API with pagination support.
      *
-     * @param encodedJql The encoded JQL query
+     * @param encodedJql The URL-encoded JQL query
      * @param versionMap Map of version names to Version objects
-     * @return List of tickets
+     * @return List of tickets retrieved from Jira
      * @throws IOException If an HTTP error occurs
      */
     private static List<Ticket> fetchAllTickets(String encodedJql, Map<String, Version> versionMap) throws IOException {
@@ -209,7 +216,7 @@ public class JiraService {
     }
 
     /**
-     * Processes the issues array and adds tickets to the list.
+     * Processes the issues array and adds parsed tickets to the list.
      *
      * @param issuesArray The JSON array of issues
      * @param tickets The list to add tickets to
@@ -226,11 +233,11 @@ public class JiraService {
     }
 
     /**
-     * Analizza un problema JSON in un oggetto Ticket.
+     * Parses a JSON issue into a Ticket object.
      *
-     * @param issueJson L'oggetto JSON contenente i dati del ticket
-     * @param versionMap Mappa di nomi di versione a oggetti Version
-     * @return Un oggetto Ticket popolato con i dati del JSON
+     * @param issueJson The JSON object containing ticket data
+     * @param versionMap Map of version names to Version objects
+     * @return A Ticket object populated with data from the JSON
      */
     private static Ticket parseTicket(JSONObject issueJson, Map<String, Version> versionMap) {
         if (issueJson == null) {
@@ -256,18 +263,18 @@ public class JiraService {
     }
 
     /**
-     * Sets the basic fields of a ticket.
+     * Sets the basic fields of a ticket (summary and description).
      *
      * @param ticket The ticket to update
      * @param fields The JSON object with ticket fields
      */
     private static void setBasicTicketFields(Ticket ticket, JSONObject fields) {
-        ticket.setSummary(fields.optString(FIELD_SUMMARY, ""));
-        ticket.setDescription(fields.optString(FIELD_DESCRIPTION, ""));
+        ticket.setSummary(fields.optString(FIELD_SUMMARY, null));
+        ticket.setDescription(fields.optString(FIELD_DESCRIPTION, null));
     }
 
     /**
-     * Sets the date fields of a ticket.
+     * Sets the date fields of a ticket (created and resolution dates).
      *
      * @param ticket The ticket to update
      * @param fields The JSON object with ticket fields
@@ -295,7 +302,7 @@ public class JiraService {
     }
 
     /**
-     * Sets the status fields of a ticket.
+     * Sets the status fields of a ticket (status and resolution).
      *
      * @param ticket The ticket to update
      * @param fields The JSON object with ticket fields
@@ -313,11 +320,11 @@ public class JiraService {
     }
 
     /**
-     * Imposta le versioni fisse e interessate di un ticket.
+     * Sets the fixed and affected versions of a ticket.
      *
-     * @param ticket Il ticket da aggiornare
-     * @param fields L'oggetto JSON con i campi del ticket
-     * @param versionMap Mappa di nomi di versione a oggetti Version
+     * @param ticket The ticket to update
+     * @param fields The JSON object with ticket fields
+     * @param versionMap Map of version names to Version objects
      */
     private static void setTicketVersions(Ticket ticket, JSONObject fields, Map<String, Version> versionMap) {
         if (ticket == null || fields == null || versionMap == null || versionMap.isEmpty()) {
@@ -337,7 +344,7 @@ public class JiraService {
      * @param ticket The ticket to update
      * @param versionsArray The JSON array of versions
      * @param versionMap Map of version names to Version objects
-     * @param isFixVersion Whether the versions are fixed versions or affected versions
+     * @param isFixVersion Whether the versions are fixed versions (true) or affected versions (false)
      */
     private static void addVersionsFromJsonArray(Ticket ticket, JSONArray versionsArray, 
                                                 Map<String, Version> versionMap, boolean isFixVersion) {
@@ -361,10 +368,10 @@ public class JiraService {
     }
 
     /**
-     * Imposta le versioni derivate (versione iniettata e versione di apertura) di un ticket.
+     * Sets the derived versions (injected version and opening version) of a ticket.
      *
-     * @param ticket Il ticket da aggiornare
-     * @param versionMap Mappa di nomi di versione a oggetti Version
+     * @param ticket The ticket to update
+     * @param versionMap Map of version names to Version objects
      */
     private static void setDerivedVersions(Ticket ticket, Map<String, Version> versionMap) {
         if (ticket == null || versionMap == null || versionMap.isEmpty()) {
@@ -376,7 +383,7 @@ public class JiraService {
     }
 
     /**
-     * Sets the injected version of a ticket.
+     * Sets the injected version of a ticket based on the oldest affected version.
      *
      * @param ticket The ticket to update
      */
@@ -393,7 +400,8 @@ public class JiraService {
     }
 
     /**
-     * Sets the opening version of a ticket.
+     * Sets the opening version of a ticket based on the creation date.
+     * The opening version is the latest version released before the ticket was created.
      *
      * @param ticket The ticket to update
      * @param versionMap Map of version names to Version objects

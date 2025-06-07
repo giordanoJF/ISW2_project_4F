@@ -10,9 +10,10 @@ import java.util.NoSuchElementException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-
 /**
- * Controller for ticket cleaning operations.
+ * Controller responsible for ticket cleaning operations.
+ * Provides functionality to validate and sanitize ticket data before processing,
+ * removing invalid entries and ensuring data consistency.
  */
 public class TicketCleanerController {
     private static final Logger LOGGER = Logger.getLogger(TicketCleanerController.class.getName());
@@ -21,6 +22,8 @@ public class TicketCleanerController {
      * Cleans a list of tickets by applying validation rules and removing invalid entries.
      *
      * @param tickets the list of tickets to clean
+     * @param coldStartTickets the list of tickets used for cold start (initial training data)
+     * @param targetProjectVersions the list of versions associated with the project
      */
     public void cleanTickets(List<Ticket> tickets, List<Ticket> coldStartTickets, List<Version> targetProjectVersions) {
         executeWithErrorHandling(() -> TicketCleaner.cleanTargetTickets(tickets, coldStartTickets, targetProjectVersions),
@@ -33,6 +36,7 @@ public class TicketCleanerController {
      *
      * @param supplier     The function to execute
      * @param errorMessage The error message to log if an exception occurs
+     * @throws RuntimeException If an error occurs during execution, program will terminate
      */
     private void executeWithErrorHandling(ExceptionHandlingSupplier supplier, String errorMessage) {
         try {
@@ -56,8 +60,20 @@ public class TicketCleanerController {
         }
     }
 
+    /**
+     * Functional interface for operations that may throw exceptions related to ticket cleaning.
+     * Used for handling various validation and processing exceptions.
+     */
     @FunctionalInterface
     private interface ExceptionHandlingSupplier {
+        /**
+         * Executes the operation.
+         *
+         * @throws NullPointerException if a null value is encountered during processing
+         * @throws NoSuchElementException if a required element is not found
+         * @throws IllegalArgumentException if an invalid argument is provided
+         * @throws ConcurrentModificationException if the collection is modified during iteration
+         */
         void get() throws NullPointerException, NoSuchElementException, IllegalArgumentException, ConcurrentModificationException;
     }
 }

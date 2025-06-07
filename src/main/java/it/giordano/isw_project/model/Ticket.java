@@ -98,6 +98,10 @@ public class Ticket {
         return affectedVersions;
     }
 
+    public void setAffectedVersions(List<Version> affectedVersions) {
+        this.affectedVersions = affectedVersions;
+    }
+
     public void addAffectedVersion(Version version) {
         if (this.affectedVersions == null) {
             this.affectedVersions = new ArrayList<>();
@@ -111,6 +115,14 @@ public class Ticket {
 
     public void setInjectedVersion(Version injectedVersion) {
         this.injectedVersion = injectedVersion;
+    }
+
+    public Boolean getUnsuitablePredictedIV() {
+        return unsuitablePredictedIV;
+    }
+
+    public void setUnsuitablePredictedIV(Boolean unsuitablePredictedIV) {
+        this.unsuitablePredictedIV = unsuitablePredictedIV;
     }
 
     @Override
@@ -137,15 +149,4 @@ public class Ticket {
         return names;
     }
 
-    public void setAffectedVersions(List<Version> affectedVersions) {
-        this.affectedVersions = affectedVersions;
-    }
-
-    public Boolean getUnsuitablePredictedIV() {
-        return unsuitablePredictedIV;
-    }
-
-    public void setUnsuitablePredictedIV(Boolean unsuitablePredictedIV) {
-        this.unsuitablePredictedIV = unsuitablePredictedIV;
-    }
 }

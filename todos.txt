@@ -188,3 +188,9 @@ switching bookkeeper with openjpa is bugged
 count unsuitable and compare with all null rows
 
 proportion sort by opening version?
+
+---
+
+documentation + all english + methods in the right classes + features correctness
+
+set null instead of empty string?

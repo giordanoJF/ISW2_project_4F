@@ -9,6 +9,10 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+/**
+ * Controller responsible for handling CSV export operations for project data.
+ * Provides methods to export versions and tickets to CSV files.
+ */
 public class CsvController {
     private static final Logger LOGGER = Logger.getLogger(CsvController.class.getName());
 
@@ -40,6 +44,7 @@ public class CsvController {
      *
      * @param supplier     The function to execute
      * @param errorMessage The error message to log if an exception occurs
+     * @throws RuntimeException If an error occurs during execution, program will terminate
      */
     private void executeWithErrorHandling(ExceptionHandlingSupplier supplier, String errorMessage) {
         try {
@@ -58,8 +63,17 @@ public class CsvController {
 
     }
 
+    /**
+     * Functional interface for operations that may throw IOException.
+     * Used for CSV export operations.
+     */
     @FunctionalInterface
     private interface ExceptionHandlingSupplier {
+        /**
+         * Executes the operation.
+         *
+         * @throws IOException If an I/O error occurs during execution
+         */
         void get() throws IOException;
     }
 }
