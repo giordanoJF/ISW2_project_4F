@@ -71,7 +71,7 @@ public class TicketCleaner {
         removeInvalidTickets(tickets);
 
         //check if unsuitablePredictedIV are the only null values
-        Consistency.logUnsuitableTicketsConsistency(tickets);
+        Misc.logUnsuitableTicketsConsistency(tickets);
 
     }
 
@@ -137,7 +137,7 @@ public class TicketCleaner {
      * @param tickets the list of tickets to validate
      */
     private static void removeInvalidTickets(List<Ticket> tickets) {
-        tickets.removeIf(Consistency::shouldRemoveTicket);
+        tickets.removeIf(Misc::shouldRemoveTicket);
     }
 
     

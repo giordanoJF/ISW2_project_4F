@@ -41,7 +41,7 @@ public class Proportion {
 
         for (Ticket ticket : tickets) {
             // Check if ticket has all required versions
-            if (Consistency.hasRequiredVersions(ticket) && !Misc.hasZeroDenominator(ticket) && Consistency.hasConsistentVersions(ticket)) {
+            if (Misc.hasRequiredVersions(ticket) && !Misc.hasZeroDenominator(ticket) && Misc.hasConsistentVersions(ticket)) {
                 double p = calculateProportion(ticket);
                 if (!Double.isNaN(p) && !Double.isInfinite(p)) {
                     totalProportion += p;
@@ -69,7 +69,7 @@ public class Proportion {
         int validTickets = 0;
 
         for (Ticket ticket : tickets.subList(0, index)) {
-            if (Consistency.hasRequiredVersions(ticket) && !Misc.hasZeroDenominator(ticket) && Consistency.hasConsistentVersions(ticket)) {
+            if (Misc.hasRequiredVersions(ticket) && !Misc.hasZeroDenominator(ticket) && Misc.hasConsistentVersions(ticket)) {
                 double p = calculateProportion(ticket);
                 if (!Double.isNaN(p) && !Double.isInfinite(p)) {
                     totalProportion += p;

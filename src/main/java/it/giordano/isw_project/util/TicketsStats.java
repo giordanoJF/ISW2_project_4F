@@ -58,19 +58,19 @@ public class TicketsStats {
                 continue;
             }
 
-            if (Consistency.isInjectedVersionMissing(ticket)) {
+            if (Misc.isInjectedVersionMissing(ticket)) {
                 stats.ticketsWithoutIV++;
             }
 
-            if (Consistency.isOpeningVersionMissing(ticket)) {
+            if (Misc.isOpeningVersionMissing(ticket)) {
                 stats.ticketsWithoutOV++;
             }
 
-            if (Consistency.isAffectedVersionsMissing(ticket)) {
+            if (Misc.isAffectedVersionsMissing(ticket)) {
                 stats.ticketsWithoutAV++;
             }
 
-            if (Consistency.isFixedVersionsMissing(ticket)) {
+            if (Misc.isFixedVersionsMissing(ticket)) {
                 stats.ticketsWithoutFV++;
             }
         }

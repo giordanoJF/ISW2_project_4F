@@ -3,14 +3,6 @@ package it.giordano.isw_project.service;
 import it.giordano.isw_project.model.Ticket;
 import it.giordano.isw_project.model.Version;
 import it.giordano.isw_project.util.Misc;
-import it.giordano.isw_project.util.QueryBuilder;
-import it.giordano.isw_project.util.UrlRequests;
-import org.apache.http.HttpEntity;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.util.EntityUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -84,7 +76,7 @@ public class JiraService {
 
         List<Version> versions = new ArrayList<>();
         String url = JIRA_BASE_URL + "/project/" + projectKey + "/versions";
-        String jsonResponse = UrlRequests.executeGetRequest(url);
+        String jsonResponse = Misc.executeGetRequest(url);
 
         if (jsonResponse == null || jsonResponse.isEmpty()) {
             LOGGER.warning("Empty response from Jira API for project versions");
@@ -163,7 +155,7 @@ public class JiraService {
         List<Ticket> tickets;
         Map<String, Version> versionMap = Misc.createVersionMap(versions);
 
-        String jql = QueryBuilder.buildJqlQuery(projectKey);
+        String jql = Misc.buildJqlQuery(projectKey);
         String encodedJql = java.net.URLEncoder.encode(jql, StandardCharsets.UTF_8);
         tickets = fetchAllTickets(encodedJql, versionMap);
 
@@ -185,8 +177,8 @@ public class JiraService {
         boolean firstPage = true;
 
         do {
-            String url = QueryBuilder.buildTicketsUrl(encodedJql, startAt);
-            String jsonResponse = UrlRequests.executeGetRequest(url);
+            String url = Misc.buildTicketsUrl(encodedJql, startAt);
+            String jsonResponse = Misc.executeGetRequest(url);
 
             if (jsonResponse == null || jsonResponse.isEmpty()) {
                 LOGGER.warning("Empty response from Jira API for tickets search");
