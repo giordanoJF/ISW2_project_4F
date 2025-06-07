@@ -16,6 +16,7 @@ public class Ticket {
     private List<Version> fixedVersions; // FV
     private List<Version> affectedVersions; // AV
     private Version injectedVersion; // IV (oldest AV)
+    private Boolean unsuitablePredictedIV = false;
 
     // Getters and Setters
     public String getKey() {
@@ -138,5 +139,13 @@ public class Ticket {
 
     public void setAffectedVersions(List<Version> affectedVersions) {
         this.affectedVersions = affectedVersions;
+    }
+
+    public Boolean getUnsuitablePredictedIV() {
+        return unsuitablePredictedIV;
+    }
+
+    public void setUnsuitablePredictedIV(Boolean unsuitablePredictedIV) {
+        this.unsuitablePredictedIV = unsuitablePredictedIV;
     }
 }

@@ -163,6 +163,11 @@ public class Proportion {
             }
         }
 
+        // Check if predicted date is before the oldest version's release date
+        if (oldestVersion != null && predictedDate.before(oldestVersion.getReleaseDate())) {
+            ticket.setUnsuitablePredictedIV(true);
+        }
+
         // Find the best matching version for the predicted date
         for (Version version : projectVersions) {
             if (version.getReleaseDate() == null) {
@@ -179,13 +184,13 @@ public class Proportion {
             }
         }
 
-        // Log a warning if no suitable version was found
-        if (latestVersionBeforePrediction == null) {
-            LOGGER.warning("No suitable version found for ticket " + ticket.getKey() +
-                    " - Predicted date: " + predictedDate +
-                    " - Oldest version date: " +
-                    (oldestVersion != null ? oldestVersion.getReleaseDate() : "No versions with date"));
-        }
+//        // Log a warning if no suitable version was found
+//        if (latestVersionBeforePrediction == null) {
+//            LOGGER.warning("No suitable version found for ticket " + ticket.getKey() +
+//                    " - Predicted date: " + predictedDate +
+//                    " - Oldest version date: " +
+//                    (oldestVersion != null ? oldestVersion.getReleaseDate() : "No versions with date"));
+//        }
 
         return latestVersionBeforePrediction;
     }

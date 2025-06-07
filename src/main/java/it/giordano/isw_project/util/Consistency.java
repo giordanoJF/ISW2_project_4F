@@ -3,7 +3,14 @@ package it.giordano.isw_project.util;
 import it.giordano.isw_project.model.Ticket;
 import it.giordano.isw_project.model.Version;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.logging.Logger;
+
 public class Consistency {
+
+    private static final Logger LOGGER = Logger.getLogger(Consistency.class.getName());
+
 
     private Consistency() {
         throw new IllegalStateException("Utility class");
@@ -81,6 +88,17 @@ public class Consistency {
             return true;
         }
 
+        // check if every av is >= IV and < FV
+        if (ticket.getAffectedVersions() != null && !ticket.getAffectedVersions().isEmpty()) {
+            for (Version av : ticket.getAffectedVersions()) {
+                if (av.getReleaseDate() != null && fixedVersion.getReleaseDate() != null) {
+                    if (av.getReleaseDate().after(fixedVersion.getReleaseDate()) || av.getReleaseDate().before(ticket.getInjectedVersion().getReleaseDate())) {
+                        return true;
+                    }
+                }
+            }
+        }
+
         // Check if injected = fixed, we skip it because the bug is never produced
         if (ticket.getInjectedVersion() != null && ticket.getFixedVersions() != null) {
             if (ticket.getInjectedVersion().getReleaseDate().equals(fixedVersion.getReleaseDate())) {
@@ -156,5 +174,84 @@ public class Consistency {
                 ticket.getInjectedVersion() != null &&
                 ticket.getOpeningVersion() != null;
     }
+
+    /**
+     * Analyzes tickets to check if those with null IV/AV exactly match those with unsuitablePredictedIV set to true.
+     *
+     * @param tickets List of tickets to analyze
+     * @return true if the set of tickets with null IV/AV exactly matches the set of tickets with unsuitablePredictedIV=true
+     */
+    public static boolean logUnsuitableTicketsConsistency(List<Ticket> tickets) {
+        if (tickets == null || tickets.isEmpty()) {
+            LOGGER.warning("No tickets provided for analysis");
+            return false;
+        }
+
+        List<Ticket> ticketsWithNullVersions = new ArrayList<>();
+        List<Ticket> ticketsWithUnsuitablePredictedIV = new ArrayList<>();
+
+        // Analyze tickets and populate lists
+        for (Ticket ticket : tickets) {
+            boolean hasNullVersions = ticket.getInjectedVersion() == null ||
+                    (ticket.getAffectedVersions() == null || ticket.getAffectedVersions().isEmpty());
+
+            if (hasNullVersions) {
+                ticketsWithNullVersions.add(ticket);
+            }
+
+            if (Boolean.TRUE.equals(ticket.getUnsuitablePredictedIV())) {
+                ticketsWithUnsuitablePredictedIV.add(ticket);
+            }
+        }
+
+        // Log results
+//        LOGGER.info("Total tickets analyzed: " + tickets.size());
+        LOGGER.info("Tickets with null IV or AV: " + ticketsWithNullVersions.size());
+        LOGGER.info("Tickets with unsuitablePredictedIV=true: " + ticketsWithUnsuitablePredictedIV.size());
+
+        // Check if the two sets have the same size
+        if (ticketsWithNullVersions.size() != ticketsWithUnsuitablePredictedIV.size()) {
+            LOGGER.warning("Sets have different sizes. Cannot be exactly the same.");
+            return false;
+        }
+
+        // Check if all tickets with null versions are in the unsuitable set
+        for (Ticket nullVersionTicket : ticketsWithNullVersions) {
+            boolean found = false;
+            for (Ticket unsuitableTicket : ticketsWithUnsuitablePredictedIV) {
+                if (nullVersionTicket.getKey().equals(unsuitableTicket.getKey())) {
+                    found = true;
+                    break;
+                }
+            }
+
+            if (!found) {
+                LOGGER.warning("Ticket " + nullVersionTicket.getKey() +
+                        " has null IV/AV but is not marked as unsuitable");
+                return false;
+            }
+        }
+
+        // Check if all unsuitable tickets have null versions
+        for (Ticket unsuitableTicket : ticketsWithUnsuitablePredictedIV) {
+            boolean found = false;
+            for (Ticket nullVersionTicket : ticketsWithNullVersions) {
+                if (unsuitableTicket.getKey().equals(nullVersionTicket.getKey())) {
+                    found = true;
+                    break;
+                }
+            }
+
+            if (!found) {
+                LOGGER.warning("Ticket " + unsuitableTicket.getKey() +
+                        " is marked as unsuitable but has non-null IV/AV");
+                return false;
+            }
+        }
+
+        LOGGER.info("The sets of tickets with null IV/AV and unsuitable predicted IV are exactly the same.");
+        return true;
+    }
+
 
 }

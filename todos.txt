@@ -163,6 +163,8 @@ what if AVs is not empty but some AV are missed?
 
 JiraService.java could be improved by adding more params checks on missing/null values, maybe with a focus on public methods.
 
+change csv exporter, remove sonar and warnings.
+
 consistence between logger.log and logger.warning
 
 check consistency of javadoc
@@ -184,3 +186,5 @@ check AVs after using proportion are in range
 switching bookkeeper with openjpa is bugged
 
 count unsuitable and compare with all null rows
+
+proportion sort by opening version?

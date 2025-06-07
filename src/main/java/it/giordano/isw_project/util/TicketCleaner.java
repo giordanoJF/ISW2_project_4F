@@ -36,6 +36,7 @@ public class TicketCleaner {
         for (Ticket ticket : tickets) {
 
             multipleToSingleFixedVersions(ticket);
+
             // If multiple injected versions (though this shouldn't happen based on model),
             // we would keep only the oldest one
             // This is a safeguard in case the model changes in the future
@@ -65,8 +66,12 @@ public class TicketCleaner {
         
         proportionWithIncremental(tickets, splitIndex, targetProjectVersions); //80%
         setAffectedVersionsAfterProportion(tickets, targetProjectVersions);
-        
+
+        //need this because now we have predicted IV and AV, but they could be inconsistent
         removeInvalidTickets(tickets);
+
+        //check if unsuitablePredictedIV are the only null values
+        Consistency.logUnsuitableTicketsConsistency(tickets);
 
     }
 
