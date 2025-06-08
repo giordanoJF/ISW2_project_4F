@@ -41,7 +41,7 @@ public class Proportion {
 
         for (Ticket ticket : tickets) {
             // Check if ticket has all required versions
-            if (Misc.hasRequiredVersions(ticket) && !Misc.hasZeroDenominator(ticket) && Misc.hasConsistentVersions(ticket)) {
+            if (TicketCleaner.hasRequiredVersions(ticket) && !hasZeroDenominator(ticket) && TicketValidator.hasConsistentVersions(ticket)) {
                 double p = calculateProportion(ticket);
                 if (!Double.isNaN(p) && !Double.isInfinite(p)) {
                     totalProportion += p;
@@ -69,7 +69,7 @@ public class Proportion {
         int validTickets = 0;
 
         for (Ticket ticket : tickets.subList(0, index)) {
-            if (Misc.hasRequiredVersions(ticket) && !Misc.hasZeroDenominator(ticket) && Misc.hasConsistentVersions(ticket)) {
+            if (TicketCleaner.hasRequiredVersions(ticket) && !hasZeroDenominator(ticket) && TicketValidator.hasConsistentVersions(ticket)) {
                 double p = calculateProportion(ticket);
                 if (!Double.isNaN(p) && !Double.isInfinite(p)) {
                     totalProportion += p;
@@ -89,7 +89,7 @@ public class Proportion {
 
     private static double calculateProportion(Ticket ticket) {
         // Get the latest fixed version (FV)
-        Version fv = Misc.getLatestVersion(ticket.getFixedVersions());
+        Version fv = VersionUtils.getLatestVersion(ticket.getFixedVersions());
         if (fv == null) {
             LOGGER.warning("Could not determine latest fixed version for ticket: " + ticket.getKey());
             return 0.0;
@@ -128,63 +128,104 @@ public class Proportion {
      */
     public static Version predictIV(Ticket ticket, double p, List<Version> projectVersions) {
         // Validate inputs
-        if (ticket == null || ticket.getFixedVersions() == null || ticket.getFixedVersions().isEmpty()
-                || ticket.getOpeningVersion() == null || projectVersions == null || projectVersions.isEmpty()) {
+        if (!isValidInput(ticket, projectVersions)) {
             return null;
         }
 
         // Get the latest fixed version and opening version
-        Version fv = Misc.getLatestVersion(ticket.getFixedVersions());
+        Version fv = VersionUtils.getLatestVersion(ticket.getFixedVersions());
         Version ov = ticket.getOpeningVersion();
 
         // Ensure versions have release dates
-        if (fv == null || fv.getReleaseDate() == null || ov.getReleaseDate() == null) {
+        if (!hasValidReleaseDates(fv, ov)) {
             return null;
         }
 
-        // Get timestamps for calculations
+        // Calculate predicted date
+        Date predictedDate = calculatePredictedDate(fv, ov, p);
+
+        // Find oldest version and check suitability
+        Version oldestVersion = findOldestVersion(projectVersions);
+        checkPredictionSuitability(ticket, predictedDate, oldestVersion);
+
+        // Find the best matching version for the predicted date
+        return findBestMatchingVersion(projectVersions, predictedDate);
+    }
+
+    /**
+     * Validates the input parameters for the predictIV method.
+     */
+    private static boolean isValidInput(Ticket ticket, List<Version> projectVersions) {
+        return ticket != null
+                && ticket.getFixedVersions() != null
+                && !ticket.getFixedVersions().isEmpty()
+                && ticket.getOpeningVersion() != null
+                && projectVersions != null
+                && !projectVersions.isEmpty();
+    }
+
+    /**
+     * Checks if the given versions have valid release dates.
+     */
+    private static boolean hasValidReleaseDates(Version fv, Version ov) {
+        return fv != null
+                && fv.getReleaseDate() != null
+                && ov.getReleaseDate() != null;
+    }
+
+    /**
+     * Calculates the predicted date based on the proportion formula.
+     */
+    private static Date calculatePredictedDate(Version fv, Version ov, double p) {
         double fvTime = fv.getReleaseDate().getTime();
         double ovTime = ov.getReleaseDate().getTime();
-
-        // Calculate predicted IV time using the proportion formula
         double predictedTime = fvTime - (fvTime - ovTime) * p;
-        Date predictedDate = new java.util.Date((long) predictedTime);
+        return new java.util.Date((long) predictedTime);
+    }
 
-        // Find the latest version released on or before the predicted date
-        Version latestVersionBeforePrediction = null;
-
-        // Find the oldest version in the project
+    /**
+     * Finds the oldest version in the project versions list.
+     */
+    private static Version findOldestVersion(List<Version> projectVersions) {
         Version oldestVersion = null;
         for (Version version : projectVersions) {
-            if (version.getReleaseDate() != null) {
-                if (oldestVersion == null || version.getReleaseDate().before(oldestVersion.getReleaseDate())) {
-                    oldestVersion = version;
-                }
+            if (version.getReleaseDate() != null &&
+                    (oldestVersion == null || version.getReleaseDate().before(oldestVersion.getReleaseDate()))) {
+                oldestVersion = version;
             }
         }
+        return oldestVersion;
+    }
 
-        // Check if predicted date is before the oldest version's release date
+    /**
+     * Checks if the prediction is suitable and sets the flag accordingly.
+     */
+    private static void checkPredictionSuitability(Ticket ticket, Date predictedDate, Version oldestVersion) {
         if (oldestVersion != null && predictedDate.before(oldestVersion.getReleaseDate())) {
             ticket.setUnsuitablePredictedIV(true);
         }
+    }
 
-        // Find the best matching version for the predicted date
+    /**
+     * Finds the best matching version for the predicted date.
+     */
+    private static Version findBestMatchingVersion(List<Version> projectVersions, Date predictedDate) {
+        Version latestVersionBeforePrediction = null;
+
         for (Version version : projectVersions) {
             if (version.getReleaseDate() == null) {
                 continue;
             }
 
             // If this version was released before or exactly at the predicted time
-            if (!version.getReleaseDate().after(predictedDate)) {
-                // If we haven't found a version yet OR this version is newer than our current best match
-                if (latestVersionBeforePrediction == null ||
-                        version.getReleaseDate().after(latestVersionBeforePrediction.getReleaseDate())) {
-                    latestVersionBeforePrediction = version;
-                }
+            if (!version.getReleaseDate().after(predictedDate) &&
+                    (latestVersionBeforePrediction == null ||
+                            version.getReleaseDate().after(latestVersionBeforePrediction.getReleaseDate()))) {
+                latestVersionBeforePrediction = version;
             }
         }
 
-//        // Log a warning if no suitable version was found
+        //        // Log a warning if no suitable version was found
 //        if (latestVersionBeforePrediction == null) {
 //            LOGGER.warning("No suitable version found for ticket " + ticket.getKey() +
 //                    " - Predicted date: " + predictedDate +
@@ -195,7 +236,12 @@ public class Proportion {
         return latestVersionBeforePrediction;
     }
 
-
-
-
+    public static boolean hasZeroDenominator(Ticket ticket) {
+        Version lv = VersionUtils.getLatestVersion(ticket.getFixedVersions());
+        if (lv != null && lv.getReleaseDate() != null && ticket.getOpeningVersion().getReleaseDate() != null) {
+            return lv.getReleaseDate().equals(ticket.getOpeningVersion().getReleaseDate());
+        } else {
+            return false;
+        }
+    }
 }

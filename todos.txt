@@ -194,3 +194,23 @@ proportion sort by opening version?
 documentation + all english + methods in the right classes + features correctness
 
 set null instead of empty string?
+
+does a mehtod is reusable? if yes put it in a common class
+
+check class consistent classes structures (like private constructor, logger and static methods)
+
+make javadoc for all files
+
+check if some methods should be moved
+
+remove duplicated methods
+
+check methods calling for missing classes
+
+order classes' methods by logic (inside the class)
+
+check if loggers are calling the same class logger constant
+
+some if checks should implement null checks
+
+remove unsuitable tickets and watch out for null values remaining

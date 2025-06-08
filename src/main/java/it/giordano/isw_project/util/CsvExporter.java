@@ -6,9 +6,7 @@ import it.giordano.isw_project.model.Version;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -19,7 +17,6 @@ import java.util.stream.Collectors;
  */
 public class CsvExporter {
     private static final Logger LOGGER = Logger.getLogger(CsvExporter.class.getName());
-    private static final String DATE_FORMAT_PATTERN = "yyyy-MM-dd";
     private static final String OUTPUT_DIR = "target";
     private static final String CSV_EXTENSION = ".csv";
     private static final String CSV_SEPARATOR = ",";
@@ -27,6 +24,13 @@ public class CsvExporter {
     // Private constructor to prevent instantiation
     private CsvExporter() {
         throw new IllegalStateException("Utility class");
+    }
+
+    /**
+     * Gets a version name safely.
+     */
+    static String getVersionName(Version version) {
+        return version != null ? version.getName() : "";
     }
 
     /**
@@ -197,7 +201,7 @@ public class CsvExporter {
         if (config.includeName) values.add(version.getName());
         if (config.includeReleased) values.add(String.valueOf(version.isReleased()));
         if (config.includeArchived) values.add(String.valueOf(version.isArchived()));
-        if (config.includeReleaseDate) values.add(formatDate(version.getReleaseDate()));
+        if (config.includeReleaseDate) values.add(DateUtils.formatDate(version.getReleaseDate()));
         return values;
     }
 
@@ -262,8 +266,8 @@ public class CsvExporter {
         if (config.includeSummary) values.add(ticket.getSummary());
         if (config.includeStatus) values.add(ticket.getStatus());
         if (config.includeResolution) values.add(ticket.getResolution());
-        if (config.includeCreatedDate) values.add(formatDate(ticket.getCreatedDate()));
-        if (config.includeResolutionDate) values.add(formatDate(ticket.getResolutionDate()));
+        if (config.includeCreatedDate) values.add(DateUtils.formatDate(ticket.getCreatedDate()));
+        if (config.includeResolutionDate) values.add(DateUtils.formatDate(ticket.getResolutionDate()));
         if (config.includeOpeningVersion) values.add(getVersionName(ticket.getOpeningVersion()));
         if (config.includeFixedVersions) values.add(formatVersionsList(ticket.getFixedVersions()));
         if (config.includeInjectedVersion) values.add(getVersionName(ticket.getInjectedVersion()));
@@ -289,24 +293,6 @@ public class CsvExporter {
                 LOGGER.warning("Failed to create output directory: " + OUTPUT_DIR);
             }
         }
-    }
-
-    /**
-     * Formats a date according to the standard format or returns empty string.
-     */
-    private static String formatDate(Date date) {
-        if (date == null) {
-            return "";
-        }
-        SimpleDateFormat dateFormat = new SimpleDateFormat(DATE_FORMAT_PATTERN);
-        return dateFormat.format(date);
-    }
-
-    /**
-     * Gets a version name safely.
-     */
-    private static String getVersionName(Version version) {
-        return version != null ? version.getName() : "";
     }
 
     /**

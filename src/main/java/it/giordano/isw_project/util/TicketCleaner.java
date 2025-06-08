@@ -5,7 +5,9 @@ import it.giordano.isw_project.model.Version;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.List;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -62,16 +64,18 @@ public class TicketCleaner {
         
         
 //      DO PROPORTION HERE
-        proportionWithColdStart(tickets, splitIndex, coldStartTickets, targetProjectVersions); //20%
+        predictIvWithProportionColdStart(tickets, splitIndex, coldStartTickets, targetProjectVersions); //20%
         
-        proportionWithIncremental(tickets, splitIndex, targetProjectVersions); //80%
+        predictIvWithProportionIncremental(tickets, splitIndex, targetProjectVersions); //80%
         setAffectedVersionsAfterProportion(tickets, targetProjectVersions);
 
         //need this because now we have predicted IV and AV, but they could be inconsistent
         removeInvalidTickets(tickets);
 
         //check if unsuitablePredictedIV are the only null values
-        Misc.logUnsuitableTicketsConsistency(tickets);
+//        logUnsuitableTicketsConsistency(tickets);
+
+        //here we need to remove tickets with unsuitable predicted IV
 
     }
 
@@ -88,7 +92,7 @@ public class TicketCleaner {
                 Version fixedVersion = ticket.getFixedVersions().getFirst();
 
                 for (Version version : targetProjectVersions) {
-                    if (!Misc.isVersionNewer(injectedVersion, version) && Misc.isVersionNewer(fixedVersion, version)) {
+                    if (!VersionUtils.isVersionNewer(injectedVersion, version) && VersionUtils.isVersionNewer(fixedVersion, version)) {
                         affectedVersions.add(version);
                     }
                 }
@@ -97,8 +101,7 @@ public class TicketCleaner {
         }
     }
 
-
-    private static void proportionWithIncremental(List<Ticket> tickets, int splitIndex, List<Version> targetProjectVersions) {
+    private static void predictIvWithProportionIncremental(List<Ticket> tickets, int splitIndex, List<Version> targetProjectVersions) {
         for (Ticket ticket : tickets.subList(splitIndex, tickets.size()) ) {
             if (ticket.getInjectedVersion() == null) {
                 double p = Proportion.evaluatePIncremental(tickets, tickets.indexOf(ticket));
@@ -109,7 +112,7 @@ public class TicketCleaner {
         }
     }
 
-    private static void proportionWithColdStart(List<Ticket> tickets, int splitIndex, List<Ticket> coldStartTickets, List<Version> targetProjectVersions) {
+    private static void predictIvWithProportionColdStart(List<Ticket> tickets, int splitIndex, List<Ticket> coldStartTickets, List<Version> targetProjectVersions) {
         double p = Proportion.evaluatePColdStart(coldStartTickets);
         for (Ticket ticket : tickets.subList(0, splitIndex)) {
             if (ticket.getInjectedVersion() == null) {
@@ -123,7 +126,7 @@ public class TicketCleaner {
     private static void multipleToSingleFixedVersions(Ticket ticket) {
         // Process multiple fixed versions - keep only the most recent one
         if (ticket.getFixedVersions() != null && ticket.getFixedVersions().size() > 1) {
-            Version latestFixedVersion = Misc.findLatestVersion(ticket.getFixedVersions());
+            Version latestFixedVersion = VersionUtils.findLatestVersion(ticket.getFixedVersions());
             List<Version> singleFixedVersion = new ArrayList<>();
             singleFixedVersion.add(latestFixedVersion);
             ticket.getFixedVersions().clear();
@@ -137,14 +140,250 @@ public class TicketCleaner {
      * @param tickets the list of tickets to validate
      */
     private static void removeInvalidTickets(List<Ticket> tickets) {
-        tickets.removeIf(Misc::shouldRemoveTicket);
+        tickets.removeIf(TicketCleaner::shouldRemoveTicket);
     }
 
-    
+    /**
+     * Checks if the injected version is missing from a ticket.
+     *
+     * @param ticket The ticket to check
+     * @return true if the injected version is missing, false otherwise
+     */
+    public static boolean isInjectedVersionMissing(Ticket ticket) {
+        return ticket.getInjectedVersion() == null ||
+                (ticket.getInjectedVersion().getName() == null ||
+                        ticket.getInjectedVersion().getName().isEmpty());
+    }
 
-    
+    /**
+     * Checks if the opening version is missing from a ticket.
+     *
+     * @param ticket The ticket to check
+     * @return true if the opening version is missing, false otherwise
+     */
+    public static boolean isOpeningVersionMissing(Ticket ticket) {
+        return ticket.getOpeningVersion() == null ||
+                (ticket.getOpeningVersion().getName() == null ||
+                        ticket.getOpeningVersion().getName().isEmpty());
+    }
 
-    
+    /**
+     * Checks if affected versions are missing from a ticket.
+     *
+     * @param ticket The ticket to check
+     * @return true if affected versions are missing, false otherwise
+     */
+    public static boolean isAffectedVersionsMissing(Ticket ticket) {
+        return ticket.getAffectedVersions() == null || ticket.getAffectedVersions().isEmpty();
+    }
 
+    /**
+     * Checks if fixed versions are missing from a ticket.
+     *
+     * @param ticket The ticket to check
+     * @return true if fixed versions are missing, false otherwise
+     */
+    public static boolean isFixedVersionsMissing(Ticket ticket) {
+        return ticket.getFixedVersions() == null || ticket.getFixedVersions().isEmpty();
+    }
+
+    public static boolean hasRequiredVersions(Ticket ticket) {
+        return ticket.getFixedVersions() != null && !ticket.getFixedVersions().isEmpty() &&
+                ticket.getInjectedVersion() != null &&
+                ticket.getOpeningVersion() != null;
+    }
+
+//    /**
+//     * Analyzes tickets to check if those with null IV/AV exactly match those with unsuitablePredictedIV set to true.
+//     *
+//     * @param tickets List of tickets to analyze
+//     * @return true if the set of tickets with null IV/AV exactly matches the set of tickets with unsuitablePredictedIV=true
+//     */
+//    public static boolean logUnsuitableTicketsConsistency(List<Ticket> tickets) {
+//        if (tickets == null || tickets.isEmpty()) {
+//            TicketCleaner.LOGGER.warning("No tickets provided for analysis");
+//            return false;
+//        }
+//
+//        List<Ticket> ticketsWithNullVersions = new ArrayList<>();
+//        List<Ticket> ticketsWithUnsuitablePredictedIV = new ArrayList<>();
+//
+//        // Analyze tickets and populate lists
+//        for (Ticket ticket : tickets) {
+//            boolean hasNullVersions = ticket.getInjectedVersion() == null ||
+//                    (ticket.getAffectedVersions() == null || ticket.getAffectedVersions().isEmpty());
+//
+//            if (hasNullVersions) {
+//                ticketsWithNullVersions.add(ticket);
+//            }
+//
+//            if (Boolean.TRUE.equals(ticket.getUnsuitablePredictedIV())) {
+//                ticketsWithUnsuitablePredictedIV.add(ticket);
+//            }
+//        }
+//
+//        // Log results
+////        LOGGER.info("Total tickets analyzed: " + tickets.size());
+//        TicketCleaner.LOGGER.log(Level.INFO, "Tickets with null IV or AV: {0}", ticketsWithNullVersions.size());
+//        TicketCleaner.LOGGER.log(Level.INFO, "Tickets with unsuitablePredictedIV=true: {0}", ticketsWithUnsuitablePredictedIV.size());
+//
+//        // Check if the two sets have the same size
+//        if (ticketsWithNullVersions.size() != ticketsWithUnsuitablePredictedIV.size()) {
+//            TicketCleaner.LOGGER.warning("Sets have different sizes. Cannot be exactly the same.");
+//            return false;
+//        }
+//
+//        // Check if all tickets with null versions are in the unsuitable set
+//        for (Ticket nullVersionTicket : ticketsWithNullVersions) {
+//            boolean found = false;
+//            for (Ticket unsuitableTicket : ticketsWithUnsuitablePredictedIV) {
+//                if (nullVersionTicket.getKey().equals(unsuitableTicket.getKey())) {
+//                    found = true;
+//                    break;
+//                }
+//            }
+//
+//            if (!found) {
+//                TicketCleaner.LOGGER.warning("Ticket " + nullVersionTicket.getKey() +
+//                        " has null IV/AV but is not marked as unsuitable");
+//                return false;
+//            }
+//        }
+//
+//        // Check if all unsuitable tickets have null versions
+//        for (Ticket unsuitableTicket : ticketsWithUnsuitablePredictedIV) {
+//            boolean found = false;
+//            for (Ticket nullVersionTicket : ticketsWithNullVersions) {
+//                if (unsuitableTicket.getKey().equals(nullVersionTicket.getKey())) {
+//                    found = true;
+//                    break;
+//                }
+//            }
+//
+//            if (!found) {
+//                TicketCleaner.LOGGER.warning("Ticket " + unsuitableTicket.getKey() +
+//                        " is marked as unsuitable but has non-null IV/AV");
+//                return false;
+//            }
+//        }
+//
+//        TicketCleaner.LOGGER.info("The sets of tickets with null IV/AV and unsuitable predicted IV are exactly the same.");
+//        return true;
+//    }
+
+    /**
+     * Determines if a ticket should be removed based on validation rules.
+     *
+     * @param ticket the ticket to validate
+     * @return true if the ticket should be removed, false otherwise
+     */
+    public static boolean shouldRemoveTicket(Ticket ticket) {
+        // Early validation checks
+        if (hasBasicValidationIssues(ticket)) {
+            return true;
+        }
+
+        Version fixedVersion = ticket.getFixedVersions().getFirst();
+
+        // Version relationship validations
+        if (hasVersionRelationshipIssues(ticket, fixedVersion)) {
+            return true;
+        }
+
+        // Affected versions validation
+        if (hasAffectedVersionIssues(ticket, fixedVersion)) {
+            return true;
+        }
+
+        // Final check: injected version equals fixed version
+        return hasInjectedEqualsFixed(ticket, fixedVersion);
+    }
+
+    /**
+     * Checks for basic validation issues (null checks and empty collections).
+     */
+    private static boolean hasBasicValidationIssues(Ticket ticket) {
+        if (ticket.getOpeningVersion() == null) {
+            return true;
+        }
+
+        return ticket.getFixedVersions() == null || ticket.getFixedVersions().isEmpty();
+    }
+
+    /**
+     * Checks for version relationship issues between opening, injected, and fixed versions.
+     */
+    private static boolean hasVersionRelationshipIssues(Ticket ticket, Version fixedVersion) {
+        // Check if opening version > fixed version
+        if (VersionUtils.isVersionNewer(ticket.getOpeningVersion(), fixedVersion)) {
+            return true;
+        }
+
+        // Check if fixed version <= any affected version
+        if (TicketValidator.isFixedVersionInvalidWithAffected(ticket, fixedVersion)) {
+            return true;
+        }
+
+        // Check if injected version >= fixed version
+        if (isInjectedVersionNewerThanFixed(ticket, fixedVersion)) {
+            return true;
+        }
+
+        // Check if opening version < injected version
+        return VersionUtils.isVersionNewer(ticket.getInjectedVersion(), ticket.getOpeningVersion());
+    }
+
+    /**
+     * Checks if injected version is newer than fixed version.
+     */
+    private static boolean isInjectedVersionNewerThanFixed(Ticket ticket, Version fixedVersion) {
+        return ticket.getInjectedVersion() != null &&
+                VersionUtils.isVersionNewer(ticket.getInjectedVersion(), fixedVersion);
+    }
+
+    /**
+     * Validates affected versions against injected and fixed versions.
+     */
+    private static boolean hasAffectedVersionIssues(Ticket ticket, Version fixedVersion) {
+        if (ticket.getAffectedVersions() == null || ticket.getAffectedVersions().isEmpty()) {
+            return false;
+        }
+
+        for (Version av : ticket.getAffectedVersions()) {
+            if (isAffectedVersionInvalid(av, fixedVersion, ticket.getInjectedVersion())) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Checks if an affected version violates the date constraints.
+     */
+    private static boolean isAffectedVersionInvalid(Version affectedVersion, Version fixedVersion, Version injectedVersion) {
+        if (affectedVersion.getReleaseDate() == null ||
+                fixedVersion.getReleaseDate() == null ||
+                injectedVersion == null) {
+            return false;
+        }
+
+        Date avDate = affectedVersion.getReleaseDate();
+        Date fixedDate = fixedVersion.getReleaseDate();
+        Date injectedDate = injectedVersion.getReleaseDate();
+
+        return avDate.after(fixedDate) || avDate.before(injectedDate);
+    }
+
+    /**
+     * Checks if injected version equals fixed version (should be removed).
+     */
+    private static boolean hasInjectedEqualsFixed(Ticket ticket, Version fixedVersion) {
+        if (ticket.getInjectedVersion() == null || ticket.getFixedVersions() == null) {
+            return false;
+        }
+
+        return ticket.getInjectedVersion().getReleaseDate().equals(fixedVersion.getReleaseDate());
+    }
 
 }

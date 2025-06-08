@@ -58,28 +58,28 @@ public class TicketsStats {
                 continue;
             }
 
-            if (Misc.isInjectedVersionMissing(ticket)) {
+            if (TicketCleaner.isInjectedVersionMissing(ticket)) {
                 stats.ticketsWithoutIV++;
             }
 
-            if (Misc.isOpeningVersionMissing(ticket)) {
+            if (TicketCleaner.isOpeningVersionMissing(ticket)) {
                 stats.ticketsWithoutOV++;
             }
 
-            if (Misc.isAffectedVersionsMissing(ticket)) {
+            if (TicketCleaner.isAffectedVersionsMissing(ticket)) {
                 stats.ticketsWithoutAV++;
             }
 
-            if (Misc.isFixedVersionsMissing(ticket)) {
+            if (TicketCleaner.isFixedVersionsMissing(ticket)) {
                 stats.ticketsWithoutFV++;
             }
         }
 
         // Calculate percentages
-        stats.percentIV = Misc.calculatePercentage(stats.ticketsWithoutIV, totalTickets);
-        stats.percentOV = Misc.calculatePercentage(stats.ticketsWithoutOV, totalTickets);
-        stats.percentAV = Misc.calculatePercentage(stats.ticketsWithoutAV, totalTickets);
-        stats.percentFV = Misc.calculatePercentage(stats.ticketsWithoutFV, totalTickets);
+        stats.percentIV = MathUtils.calculatePercentage(stats.ticketsWithoutIV, totalTickets);
+        stats.percentOV = MathUtils.calculatePercentage(stats.ticketsWithoutOV, totalTickets);
+        stats.percentAV = MathUtils.calculatePercentage(stats.ticketsWithoutAV, totalTickets);
+        stats.percentFV = MathUtils.calculatePercentage(stats.ticketsWithoutFV, totalTickets);
 
         return stats;
     }

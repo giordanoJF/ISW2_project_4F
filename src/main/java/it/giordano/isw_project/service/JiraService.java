@@ -2,7 +2,14 @@ package it.giordano.isw_project.service;
 
 import it.giordano.isw_project.model.Ticket;
 import it.giordano.isw_project.model.Version;
-import it.giordano.isw_project.util.Misc;
+import it.giordano.isw_project.util.DateUtils;
+import it.giordano.isw_project.util.VersionUtils;
+import org.apache.http.HttpEntity;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.util.EntityUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -76,7 +83,7 @@ public class JiraService {
 
         List<Version> versions = new ArrayList<>();
         String url = JIRA_BASE_URL + "/project/" + projectKey + "/versions";
-        String jsonResponse = Misc.executeGetRequest(url);
+        String jsonResponse = executeGetRequest(url);
 
         if (jsonResponse == null || jsonResponse.isEmpty()) {
             LOGGER.warning("Empty response from Jira API for project versions");
@@ -122,7 +129,7 @@ public class JiraService {
         if (!dateStr.isEmpty()) {
             try {
                 SimpleDateFormat dateFormat = new SimpleDateFormat(VERSION_DATE_FORMAT_PATTERN);
-                version.setReleaseDate(Misc.parseDate(dateStr, dateFormat));
+                version.setReleaseDate(DateUtils.parseDate(dateStr, dateFormat));
             } catch (ParseException e) {
                 LOGGER.log(Level.WARNING,"Failed to parse release date for version {0} : {1}", new Object[]{version.getName(), dateStr});
                 version.setReleaseDate(null);
@@ -153,9 +160,9 @@ public class JiraService {
         }
 
         List<Ticket> tickets;
-        Map<String, Version> versionMap = Misc.createVersionMap(versions);
+        Map<String, Version> versionMap = VersionUtils.createVersionMap(versions);
 
-        String jql = Misc.buildJqlQuery(projectKey);
+        String jql = buildJqlQuery(projectKey);
         String encodedJql = java.net.URLEncoder.encode(jql, StandardCharsets.UTF_8);
         tickets = fetchAllTickets(encodedJql, versionMap);
 
@@ -177,8 +184,8 @@ public class JiraService {
         boolean firstPage = true;
 
         do {
-            String url = Misc.buildTicketsUrl(encodedJql, startAt);
-            String jsonResponse = Misc.executeGetRequest(url);
+            String url = buildTicketsUrl(encodedJql, startAt);
+            String jsonResponse = executeGetRequest(url);
 
             if (jsonResponse == null || jsonResponse.isEmpty()) {
                 LOGGER.warning("Empty response from Jira API for tickets search");
@@ -277,7 +284,7 @@ public class JiraService {
         String createdDateStr = fields.optString(FIELD_CREATED_DATE, "");
         if (!createdDateStr.isEmpty()) {
             try {
-                ticket.setCreatedDate(Misc.parseDate(createdDateStr, dateFormat));
+                ticket.setCreatedDate(DateUtils.parseDate(createdDateStr, dateFormat));
             } catch (ParseException e) {
                 LOGGER.warning("Failed to parse created date for ticket " + ticket.getKey() + ": " + createdDateStr);
             }
@@ -286,7 +293,7 @@ public class JiraService {
         String resolutionDateStr = fields.optString(FIELD_RESOLUTION_DATE, "");
         if (!resolutionDateStr.isEmpty()) {
             try {
-                ticket.setResolutionDate(Misc.parseDate(resolutionDateStr, dateFormat));
+                ticket.setResolutionDate(DateUtils.parseDate(resolutionDateStr, dateFormat));
             } catch (ParseException e) {
                 LOGGER.warning("Failed to parse resolution date for ticket " + ticket.getKey() + ": " + resolutionDateStr);
             }
@@ -385,7 +392,7 @@ public class JiraService {
             return;
         }
 
-        Version oldestVersion = Misc.findOldestVersionWithReleaseDate(affectedVersions);
+        Version oldestVersion = VersionUtils.findOldestVersionWithReleaseDate(affectedVersions);
         if (oldestVersion != null) {
             ticket.setInjectedVersion(oldestVersion);
         }
@@ -419,7 +426,61 @@ public class JiraService {
         ticket.setOpeningVersion(latestVersion);
     }
 
+    /**
+     * Builds the JQL query for retrieving tickets.
+     *
+     * @param projectKey The project key
+     * @return JQL query string
+     */
+    public static String buildJqlQuery(String projectKey) {
+        return "project=" + projectKey +
+                " AND issuetype=Bug" +
+                " AND resolution=Fixed" +
+                " AND status in (Closed, Resolved)";
+    }
 
+    /**
+     * Builds the URL for the tickets search API.
+     *
+     * @param encodedJql The encoded JQL query
+     * @param startAt The pagination start index
+     * @return The URL for the tickets search API
+     */
+    public static String buildTicketsUrl(String encodedJql, int startAt) {
+        return JIRA_BASE_URL + "/search?jql=" + encodedJql +
+                "&startAt=" + startAt +
+                "&maxResults=" + MAX_RESULTS_PER_PAGE +
+                "&fields=key,summary,description,created,resolutiondate,status,resolution,versions,fixVersions";
+    }
 
+    /**
+     * Esegue una richiesta GET all'URL specificato.
+     *
+     * @param url L'URL a cui inviare la richiesta GET
+     * @return La risposta come stringa
+     * @throws IOException Se si verifica un errore durante la richiesta HTTP
+     */
+    public static String executeGetRequest(String url) throws IOException {
+        if (url == null || url.isEmpty()) {
+            throw new IllegalArgumentException("URL cannot be null or empty");
+        }
 
+        try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
+            HttpGet httpGet = new HttpGet(url);
+            try (CloseableHttpResponse response = httpClient.execute(httpGet)) {
+                int statusCode = response.getStatusLine().getStatusCode();
+                if (statusCode != 200) {
+                    JiraService.LOGGER.log(Level.WARNING, "HTTP request failed with status: {0}", statusCode);
+                    return null;
+                }
+
+                HttpEntity entity = response.getEntity();
+                if (entity == null) {
+                    return null;
+                }
+
+                return EntityUtils.toString(entity);
+            }
+        }
+    }
 }
