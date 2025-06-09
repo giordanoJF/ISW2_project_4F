@@ -76,6 +76,7 @@ public class TicketCleaner {
 //        logUnsuitableTicketsConsistency(tickets);
 
         //here we need to remove tickets with unsuitable predicted IV
+        tickets.removeIf(ticket -> ticket.getUnsuitablePredictedIV() != null && ticket.getUnsuitablePredictedIV());
 
     }
 

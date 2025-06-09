@@ -214,3 +214,7 @@ check if loggers are calling the same class logger constant
 some if checks should implement null checks
 
 remove unsuitable tickets and watch out for null values remaining
+
+check each class for logic bugs and null pointer exception or refactoring.
+
+check if predicted iv is in range of avs
