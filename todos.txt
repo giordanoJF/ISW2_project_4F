@@ -218,3 +218,15 @@ remove unsuitable tickets and watch out for null values remaining
 check each class for logic bugs and null pointer exception or refactoring.
 
 check if predicted iv is in range of avs
+
+error handling
+
+rewrite all javadoc
+
+methods calls in the same class should not include class name before the method name
+
+remove some logs
+
+should be models nullabe?
+
+make classes final.

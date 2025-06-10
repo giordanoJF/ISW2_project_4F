@@ -13,8 +13,8 @@ import it.giordano.isw_project.util.TicketsStats;
 import java.util.List;
 
 public class Main {
-    private static final String PROJECT_KEY = "BOOKKEEPER";
-    private static final String COLD_START_PROJECT_KEY = "OPENJPA";
+    private static final String PROJECT_KEY = "OPENJPA";
+    private static final String COLD_START_PROJECT_KEY = "BOOKKEEPER";
 
     public static void main(String[] args) {
         JiraController jiraController = new JiraController();

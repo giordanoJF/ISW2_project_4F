@@ -6,7 +6,6 @@ import it.giordano.isw_project.service.JiraService;
 import org.json.JSONException;
 
 import java.io.IOException;
-import java.text.ParseException;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -61,18 +60,6 @@ public class JiraController {
             System.exit(1);
             return null; // Unreachable, as System.exit terminates the program
         }
-        catch (ParseException e) {
-            // Date parsing errors
-            LOGGER.log(Level.SEVERE, "{0}: Date format error", errorMessage);
-            System.exit(1);
-            return null; // Unreachable, as System.exit terminates the program
-        }
-        catch (JSONException e) {
-            // JSON format errors are critical - log and terminate
-            LOGGER.log(Level.SEVERE, "{0}: JSON format error", errorMessage);
-            System.exit(1);
-            return null; // Unreachable, as System.exit terminates the program
-        }
         catch (Exception e) {
             // For other unexpected exceptions
             LOGGER.log(Level.SEVERE, "{0}: Unexpected error - {1}", new Object[]{errorMessage, e.getMessage()});
@@ -94,9 +81,8 @@ public class JiraController {
          *
          * @return The result of the operation
          * @throws IOException If an I/O error occurs during execution
-         * @throws ParseException If a date parsing error occurs
          * @throws JSONException If a JSON parsing error occurs
          */
-        T get() throws IOException, ParseException, JSONException;
+        T get() throws IOException;
     }
 }
