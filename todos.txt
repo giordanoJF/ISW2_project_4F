@@ -1,0 +1,9 @@
+check every method uses @null/@non-null descriptors as old project
+check if methods are reusable
+check if logic is correct
+check sonar
+maintain warnings about @non-null checks
+add javadoc
+\n for each log
+error handling of controllers is chosen by explicit exception throwing of service methods
+always call local methods without class name before
