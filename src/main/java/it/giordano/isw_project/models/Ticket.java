@@ -13,6 +13,7 @@ public class Ticket {
     @Nullable private Date resolutionDate;
     @Nullable private Version openingVersion;
     @Nullable private Version fixedVersion;
+    @Nullable private List<Version> fixedVersions;
     @Nullable private List<Version> affectedVersions;
     @Nullable private Version injectedVersion;
     @Nullable private Boolean unsuitablePredictedIV;
@@ -96,5 +97,19 @@ public class Ticket {
 
     public void setUnsuitablePredictedIV(@Nullable Boolean unsuitablePredictedIV) {
         this.unsuitablePredictedIV = unsuitablePredictedIV;
+    }
+
+    @Nullable
+    public List<Version> getFixedVersions() {
+        return fixedVersions;
+    }
+    public void setFixedVersions(@Nullable List<Version> fixedVersions) {
+        this.fixedVersions = fixedVersions;
+    }
+    public void addFixedVersion(@Nullable Version version) {
+        if (this.fixedVersions == null) {
+            this.fixedVersions = new ArrayList<>();
+        }
+        this.fixedVersions.add(version);
     }
 }
