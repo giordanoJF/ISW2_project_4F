@@ -1,17 +1,18 @@
-check every method uses @null/@non-null descriptors as old project
---check if methods are reusable --
-check if logic is correct
-check sonar
-maintain warnings about @non-null checks
-add javadoc
-\n for each log
-error handling of controllers is chosen by explicit exception throwing of service methods
-always call local methods without class name before
-throws exception can have \n at the end?
-less info of tickets respect old isw project
---distinguish between fixedversion and List fixedversions -> we will set it inside ticket cleaner ---
-check logic and @nullable/nonnull annotations, also doble check with ai
-check everything is rewritten as in old project
-group methods inside JiraScraper and reuse
---do some test cases
+    check every method uses @null/@non-null descriptors as old project
+--  check if methods are reusable
+    check if logic is correct
+    check sonar
+    maintain warnings about @non-null checks
+    add javadoc
+    \n for each log
+    error handling of controllers is chosen by explicit exception throwing of service methods
+    always call local methods without class name before
+    throws exception can have \n at the end?
+    less info of tickets respect old isw project
+--  distinguish between fixedversion and List fixedversions -> we will set it inside ticket cleaner
+    check logic and @nullable/nonnull annotations, also doble check with ai
+    check everything is rewritten as in old project
+    group methods inside JiraScraper and reuse
+--  do some test cases
+
 \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
