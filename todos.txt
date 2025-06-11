@@ -14,5 +14,6 @@
     check everything is rewritten as in old project
     group methods inside JiraScraper and reuse
 --  do some test cases
+--  sonar is tagging smells reguarding @Nonnullable checks, but is still common practice to hold them (maybe change the rule)
 
 \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
