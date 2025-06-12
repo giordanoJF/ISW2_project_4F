@@ -3,7 +3,7 @@
     check if logic is correct
     check sonar
     maintain warnings about @non-null checks
-    add javadoc
+--  add javadoc
     \n for each log
     error handling of controllers is chosen by explicit exception throwing of service methods
     always call local methods without class name before
@@ -14,6 +14,10 @@
     check everything is rewritten as in old project
     group methods inside JiraScraper and reuse
 --  do some test cases
---  sonar is tagging smells reguarding @Nonnullable checks, but is still common practice to hold them (maybe change the rule)
+--  sonar is tagging smells regarding @Nonnullable checks, but is still common practice to hold them (maybe change the rule)
 
 \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+--  rewrite all old classes
+--  try to set fixversion with findoldest or findnewest methods. check if reusable
+-- @NonNull and @Nullable annotations should be more consistent regarding the reason of their use

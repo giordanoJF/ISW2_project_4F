@@ -442,6 +442,7 @@ public final class JiraScraperService {
         return "key,summary,description,created,resolutiondate,status,resolution,versions,fixVersions";
     }
 
+    //possible reuse
     /**
      * Finds the oldest version with a release date from a list of versions.
      *
@@ -501,6 +502,7 @@ public final class JiraScraperService {
                 !version.getReleaseDate().after(createdDate);
     }
 
+    //possible reuse
     /**
      * Checks if a version is more recent than the current latest version.
      *
@@ -823,6 +825,37 @@ public final class JiraScraperService {
 
         // Set affected versions
         addVersionsFromJsonArray(ticket, fields.optJSONArray(FIELD_VERSIONS), versionMap, false);
+
+        // Set most recent fixed version
+        if (ticket.getFixedVersions() == null || ticket.getFixedVersions().isEmpty()) {
+            ticket.setFixedVersion(null);
+        } else {
+            ticket.setFixedVersion(mostRecentVersionFromList(ticket.getFixedVersions()));
+        }
+    }
+
+    /**
+     * Finds the most recent version from a list of versions.
+     *
+     * <p>Used to determine the most recent fixed version for a ticket.</p>
+     *
+     * @param versions the list of versions to search
+     * @return the most recent Version object, or null if the list is empty
+     */
+    @Nullable
+    private static Version mostRecentVersionFromList(@Nonnull List<Version> versions) {
+        if (versions == null || versions.isEmpty()) {
+            return null;
+        }
+
+        Version mostRecent = null;
+        for (Version version : versions) {
+            if (mostRecent == null || (version.getReleaseDate() != null &&
+                    (mostRecent.getReleaseDate() == null || version.getReleaseDate().after(mostRecent.getReleaseDate())))) {
+                mostRecent = version;
+            }
+        }
+        return mostRecent;
     }
 
     /**
@@ -843,7 +876,7 @@ public final class JiraScraperService {
             throw new IllegalArgumentException("Ticket and version map cannot be null");
         }
 
-        if (versionsArray == null) {
+        if (versionsArray == null || versionsArray.isEmpty()) {
             return;
         }
 
