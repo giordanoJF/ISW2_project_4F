@@ -25,3 +25,5 @@
 -- check before if methods need/are using correctly @NonNull/@Nullable annotations for their parameters and return values,
                     NEXT check if callers are respecting the contract and look for null/empty checks for both string, obj, list, etc...
 -- migrate methods to lightweight JiraScraper class
+-- use @NonNull/@Nullable annotations also in other classes
+-- change profile on laptop of intellij to use @NonNull/@Nullable annotations

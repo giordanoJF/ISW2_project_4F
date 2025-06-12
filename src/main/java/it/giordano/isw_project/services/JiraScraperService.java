@@ -55,7 +55,7 @@ public final class JiraScraperService {
 
     // Logger
     /** Logger instance for this class */
-    private static final Logger LOGGER = Logger.getLogger(JiraScraperService.class.getName());
+    @Nonnull private static final Logger LOGGER = Objects.requireNonNull(Logger.getLogger(JiraScraperService.class.getName()));
 
 
 
@@ -133,14 +133,14 @@ public final class JiraScraperService {
      * @throws IllegalArgumentException if projectKey is null or empty
      */
     @Nonnull
-    public static List<Version> getProjectVersions(@Nonnull String projectKey) throws IOException {
+    public static List<Version> getProjectVersions(@Nullable String projectKey) throws IOException {
         if (Consistency.isStrNullOrEmpty(projectKey)) {
             throw new IllegalArgumentException("Project key cannot be null or empty");
         }
 
         String url = buildVersionsUrl(projectKey);
-        if (Consistency.isStrNullOrEmpty(url)) {
-            throw new IllegalArgumentException("URL cannot be null or empty");
+        if (url.isEmpty()) {
+            throw new IllegalArgumentException("Constructed URL cannot be null or empty");
         }
 
         String jsonResponse = executeGetRequest(url);
@@ -167,7 +167,7 @@ public final class JiraScraperService {
      */
     @Nonnull
     private static List<Version> parseVersionsFromJsonResponse(@Nullable String jsonResponse,
-                                                               @Nonnull String projectKey) {
+                                                               @Nullable String projectKey) {
         List<Version> versions = new ArrayList<>();
 
         if (Consistency.isStrNullOrEmpty(jsonResponse)) {
@@ -179,10 +179,14 @@ public final class JiraScraperService {
         }
 
         JSONArray versionArray = new JSONArray(jsonResponse);
+        if (versionArray.isEmpty()) {
+            LOGGER.log(Level.INFO, "No versions found for project {0}\n", projectKey);
+            return versions;
+        }
 
         for (int i = 0; i < versionArray.length(); i++) {
             JSONObject versionJson = versionArray.optJSONObject(i);
-            if (versionJson != null) {
+            if (versionJson != null && !versionJson.isEmpty()) {
                 Version version = parseVersionFromJson(versionJson);
                 versions.add(version);
             }
@@ -203,7 +207,14 @@ public final class JiraScraperService {
      * @throws IllegalArgumentException if versionJson is null
      */
     @Nonnull
-    private static Version parseVersionFromJson(@Nonnull JSONObject versionJson) {
+    private static Version parseVersionFromJson(@Nullable JSONObject versionJson) {
+        if (versionJson == null) {
+            throw new IllegalArgumentException("Version JSON object cannot be null");
+        }
+        if (versionJson.isEmpty()) {
+            LOGGER.warning("Empty version JSON object encountered\n");
+            return new Version(); // Return an empty version if JSON is empty
+        }
 
         Version version = new Version();
         version.setId(versionJson.optString(FIELD_ID, null));
@@ -223,10 +234,15 @@ public final class JiraScraperService {
      * @param versionJson the JSON object containing version data
      * @throws IllegalArgumentException if either parameter is null
      */
-    private static void setVersionReleaseDate(@Nonnull Version version, @Nonnull JSONObject versionJson) {
+    private static void setVersionReleaseDate(@Nullable Version version, @Nullable JSONObject versionJson) {
+        if (version == null) {
+            throw new IllegalArgumentException("Version object cannot be null");
+        }
+        if (versionJson == null) {
+            throw new IllegalArgumentException("Version JSON object cannot be null");
+        }
 
         String dateStr = versionJson.optString(FIELD_RELEASE_DATE, null);
-
         if (Consistency.isStrNullOrEmpty(dateStr)) {
             version.setReleaseDate(null);
             return;
@@ -250,7 +266,7 @@ public final class JiraScraperService {
      * @throws IllegalArgumentException if projectKey is null or empty
      */
     @Nonnull
-    private static String buildVersionsUrl(@Nonnull String projectKey) {
+    private static String buildVersionsUrl(@Nullable String projectKey) {
         if (Consistency.isStrNullOrEmpty(projectKey)) {
             throw new IllegalArgumentException("Project key cannot be null or empty");
         }
@@ -264,14 +280,15 @@ public final class JiraScraperService {
      * @param projectKey the project key for logging context
      * @throws IllegalArgumentException if versions is null or projectKey is null/empty
      */
-    private static void logVersionsRetrievalResult(@Nonnull List<Version> versions, @Nonnull String projectKey) {
+    private static void logVersionsRetrievalResult(@Nullable List<Version> versions, @Nullable String projectKey) {
         if (Consistency.isStrNullOrEmpty(projectKey)) {
             throw new IllegalArgumentException("Project key cannot be null or empty");
         }
 
-        if (versions.isEmpty()) {
-            LOGGER.log(Level.INFO, "No versions found for project {0}\n", projectKey);
-        } else {
+        if (versions == null) {
+            throw new IllegalArgumentException("Versions list cannot be null");
+        }
+        else {
             LOGGER.log(Level.INFO, "Retrieved {0} versions for project {1}\n", new Object[]{versions.size(), projectKey});
         }
     }
@@ -293,7 +310,7 @@ public final class JiraScraperService {
      * @throws IllegalArgumentException if url is null or empty
      */
     @Nullable
-    public static String executeGetRequest(@Nonnull String url) throws IOException {
+    public static String executeGetRequest(@Nullable String url) throws IOException {
         if (Consistency.isStrNullOrEmpty(url)) {
             throw new IllegalArgumentException("URL cannot be null or empty");
         }
@@ -301,8 +318,10 @@ public final class JiraScraperService {
         try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
             HttpGet httpGet = new HttpGet(url);
 
+            assert httpClient != null;
             try (CloseableHttpResponse response = httpClient.execute(httpGet)) {
-                int statusCode = response.getStatusLine().getStatusCode();
+                assert response != null;
+                int statusCode = Objects.requireNonNull(response.getStatusLine()).getStatusCode();
 
                 if (statusCode != 200) {
                     LOGGER.log(Level.WARNING, "HTTP request failed with status: {0} for URL: {1}\n",
@@ -329,11 +348,15 @@ public final class JiraScraperService {
      * @throws IllegalArgumentException if dateFormat is null
      */
     @Nullable
-    public static Date parseDate(@Nullable String dateString, @Nonnull SimpleDateFormat dateFormat)
+    public static Date parseDate(@Nullable String dateString, @Nullable SimpleDateFormat dateFormat)
             throws ParseException {
+        if (dateFormat == null) {
+            throw new IllegalArgumentException("Date format cannot be null");
+        }
         if (Consistency.isStrNullOrEmpty(dateString)) {
             return null;
         }
+
         return dateFormat.parse(dateString);
     }
 
