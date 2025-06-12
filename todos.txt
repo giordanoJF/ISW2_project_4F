@@ -4,7 +4,7 @@
     check sonar
     maintain warnings about @non-null checks
 --  add javadoc
-    \n for each log
+--  \n for each log
     error handling of controllers is chosen by explicit exception throwing of service methods
     always call local methods without class name before
     throws exception can have \n at the end?
@@ -27,3 +27,10 @@
 -- migrate methods to lightweight JiraScraper class
 -- use @NonNull/@Nullable annotations also in other classes
 -- change profile on laptop of intellij to use @NonNull/@Nullable annotations
+-- check the csv has all expected fields
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+-- reuse methods from old project
+-- check nullable methods
+-- JiraScraper is now ok, but we will need to raise reuse of methods and improve all null checks (reading the flow of the code, when the class should raise an exception or continue the flow)

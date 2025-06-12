@@ -3,22 +3,27 @@ package it.giordano.isw_project.controllers;
 import it.giordano.isw_project.models.Ticket;
 import it.giordano.isw_project.models.Version;
 import it.giordano.isw_project.services.JiraScraperService;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import org.json.JSONException;
 
 import java.io.IOException;
 import java.text.ParseException;
 import java.util.List;
+import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class JiraScraperController {
-    private static final Logger LOGGER = Logger.getLogger(JiraScraperController.class.getName());
+    @Nonnull private static final Logger LOGGER = Objects.requireNonNull(Logger.getLogger(JiraScraperController.class.getName()));
 
+    @Nullable
     public List<Version> getProjectVersions(String projectKey) {
         return executeWithErrorHandling(() -> JiraScraperService.getProjectVersions(projectKey),
                 "Error retrieving project versions for " + projectKey);
     }
 
+    @Nullable
     public List<Ticket> getProjectTickets(String projectKey, List<Version> versions) {
         return executeWithErrorHandling(() -> JiraScraperService.getProjectTickets(projectKey, versions),
                 "Error retrieving tickets for " + projectKey);
@@ -30,8 +35,10 @@ public class JiraScraperController {
     }
 
     //all exceptions not handled by the service is handled here
+    @Nullable
     private <T> T executeWithErrorHandling(ExceptionHandlingSupplier<T> supplier, String errorMessage) {
         try {
+            assert supplier != null;
             return supplier.get();
         } catch (IOException e) {
             LOGGER.log(Level.SEVERE, "{0}: I/O Error\n", errorMessage);
