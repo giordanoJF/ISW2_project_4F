@@ -21,6 +21,13 @@
 -- JiraScraper is now ok, but we will need to raise reuse of methods and improve all null checks
                 (reading the flow of the code, when the class should raise an exception or continue the flow)
 -- in JiraScraper some logic is not consistent, sometimes empty list raise an exception, sometimes not.
--- JiraScraper could be improved by a better handling of empty lists or null values. it throws exceptions a lot.
+-- JiraScraper could be improved by a better handling of empty lists or null values. sometimes is better to return empty/null
+                values with a warning log then throws exceptions.
+-- think about that method called should be implemented with generalized logic.
+-- This is more about future improvements, also after the exam itself.
+
+-- HOW TO IMPROVE JIRA SCRAPER: 1. Make all methods generic, so they can handle empty or null values gracefully and return accordingly.
+                                2. Find reusable methods and move them to a common class.
+                                3. Check again the logic
 
 \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\

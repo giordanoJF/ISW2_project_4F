@@ -421,6 +421,7 @@ public final class JiraScraperService {
 
     // TICKETS METHODS --> Helper methods
 
+    //possible reuse
     /**
      * Creates a map of versions indexed by their names.
      *
