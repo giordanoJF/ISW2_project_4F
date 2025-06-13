@@ -7,7 +7,7 @@ import it.giordano.isw_project.models.Version;
 import java.util.List;
 
 public class Main {
-    private static final String PROJECT_KEY = "BOOKKEEPER";
+    private static final String PROJECT_KEY = "OPENJPA";
 
     public static void main(String[] args) {
         // Controllers initialization

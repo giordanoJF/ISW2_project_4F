@@ -1,29 +1,16 @@
-    check every method uses @null/@non-null descriptors as old project
+--  check every method uses @null/@non-null descriptors as old project
 --  check if methods are reusable
-    check if logic is correct
-    check sonar
-    maintain warnings about @non-null checks
+--  check sonar
 --  add javadoc
 --  \n for each log
-    error handling of controllers is chosen by explicit exception throwing of service methods
-    always call local methods without class name before
-    throws exception can have \n at the end?
-    less info of tickets respect old isw project
+--  always call local methods without class name before
 --  distinguish between fixedversion and List fixedversions -> we will set it inside ticket cleaner
-    check logic and @nullable/nonnull annotations, also doble check with ai
-    check everything is rewritten as in old project
-    group methods inside JiraScraper and reuse
+--  check everything is rewritten as in old project
 --  do some test cases
---  sonar is tagging smells regarding @Nonnullable checks, but is still common practice to hold them (maybe change the rule)
 
 \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
 --  rewrite all old classes
---  try to set fixversion with findoldest or findnewest methods. check if reusable
--- @NonNull and @Nullable annotations should be more consistent regarding the reason of their use
--- redundant checks are highlighted only if using @nullable annotations for both callers and called methods
--- check before if methods need/are using correctly @NonNull/@Nullable annotations for their parameters and return values,
-                    NEXT check if callers are respecting the contract and look for null/empty checks for both string, obj, list, etc...
 -- migrate methods to lightweight JiraScraper class
 -- use @NonNull/@Nullable annotations also in other classes
 -- change profile on laptop of intellij to use @NonNull/@Nullable annotations
@@ -31,6 +18,9 @@
 
 \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
--- reuse methods from old project
--- check nullable methods
--- JiraScraper is now ok, but we will need to raise reuse of methods and improve all null checks (reading the flow of the code, when the class should raise an exception or continue the flow)
+-- JiraScraper is now ok, but we will need to raise reuse of methods and improve all null checks
+                (reading the flow of the code, when the class should raise an exception or continue the flow)
+-- in JiraScraper some logic is not consistent, sometimes empty list raise an exception, sometimes not.
+-- JiraScraper could be improved by a better handling of empty lists or null values. it throws exceptions a lot.
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\

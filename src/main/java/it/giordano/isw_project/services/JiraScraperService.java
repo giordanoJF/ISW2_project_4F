@@ -29,6 +29,8 @@ import java.util.logging.Logger;
  * from Apache Jira instances. It handles pagination, date parsing, and version
  * mapping for bug tracking analysis.</p>
  *
+ * <p>This class works only with non-empty list of project versions.</p>
+ *
  * <p>The service is designed to work with Apache Jira's REST API v2 and focuses
  * on extracting bug-related tickets with their associated version information.</p>
  *
@@ -632,8 +634,11 @@ public final class JiraScraperService {
 
         do {
             String url = buildTicketsUrl(encodedJql, startAt);
-            String jsonResponse = executeGetRequest(url);
+            if (url.trim().isEmpty()) {
+                throw new IllegalArgumentException("Constructed URL cannot be null or empty");
+            }
 
+            String jsonResponse = executeGetRequest(url);
             if ((jsonResponse == null || jsonResponse.trim().isEmpty())) {
                 LOGGER.warning("Empty response from Jira API for tickets search\n");
                 break;
@@ -830,7 +835,7 @@ public final class JiraScraperService {
         }
 
         if (versionMap.isEmpty()) {
-            return;
+            throw new IllegalArgumentException("Version map cannot be empty");
         }
 
         // Set fixed versions
@@ -896,6 +901,9 @@ public final class JiraScraperService {
         if (ticket == null || versionMap == null) {
             throw new IllegalArgumentException("Ticket and version map cannot be null");
         }
+        if (versionMap.isEmpty()) {
+            throw new IllegalArgumentException("Version map cannot be empty");
+        }
 
         if (versionsArray == null || versionsArray.isEmpty()) {
             return;
@@ -909,10 +917,25 @@ public final class JiraScraperService {
         }
     }
 
+    /**
+     * Processes a single version JSON object and adds it to the ticket.
+     *
+     * <p>Extracts the version name from the JSON and looks it up in the version map.
+     * If found, adds it to the ticket as either a fix version or an affected version.</p>
+     *
+     * @param ticket the ticket to update
+     * @param versionJson the JSON object representing a version
+     * @param versionMap the map of versions for lookup
+     * @param isFixVersion true if this is a fix version, false for affected version
+     * @throws IllegalArgumentException if ticket, versionJson, or versionMap is null
+     */
     private static void processVersionJson(@Nullable Ticket ticket, @Nullable JSONObject versionJson,
                                            @Nullable Map<String, Version> versionMap, boolean isFixVersion) {
         if (ticket == null || versionJson == null || versionMap == null) {
             throw new IllegalArgumentException("Ticket, version JSON, and version map cannot be null");
+        }
+        if (versionMap.isEmpty()) {
+            throw new IllegalArgumentException("Version map cannot be empty");
         }
 
         String versionName = versionJson.optString(FIELD_NAME, null);
@@ -927,6 +950,16 @@ public final class JiraScraperService {
         }
     }
 
+    /**
+     * Adds a version to a ticket as either a fix version or an affected version.
+     *
+     * <p>Utility method to encapsulate the logic of adding versions to tickets.</p>
+     *
+     * @param ticket the ticket to update
+     * @param version the version to add
+     * @param isFixVersion true if this is a fix version, false for affected version
+     * @throws IllegalArgumentException if ticket or version is null
+     */
     //possible reuse
     private static void addVersionToTicket(@Nullable Ticket ticket, @Nullable Version version, boolean isFixVersion) {
         if (ticket == null || version == null) {
@@ -956,8 +989,7 @@ public final class JiraScraperService {
         }
 
         if (versionMap.isEmpty()) {
-            LOGGER.log(Level.WARNING, "Version map is empty - skipping derived versions for ticket  {0}\n", ticket.getKey());
-            return;
+            throw new IllegalArgumentException("Version map cannot be empty");
         }
 
         setInjectedVersionFromAffectedVersions(ticket);
@@ -1003,6 +1035,9 @@ public final class JiraScraperService {
     private static void setOpeningVersion(@Nullable Ticket ticket, @Nullable Map<String, Version> versionMap) {
         if (ticket == null || versionMap == null) {
             throw new IllegalArgumentException("Ticket and version map cannot be null");
+        }
+        if (versionMap.isEmpty()) {
+            throw new IllegalArgumentException("Version map cannot be empty");
         }
 
         Date createdDate = ticket.getCreatedDate();
