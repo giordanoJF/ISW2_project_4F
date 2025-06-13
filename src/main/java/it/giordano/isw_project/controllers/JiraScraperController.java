@@ -19,14 +19,14 @@ public class JiraScraperController {
     @Nonnull private static final Logger LOGGER = Objects.requireNonNull(Logger.getLogger(JiraScraperController.class.getName()));
 
     @Nullable
-    public List<Version> getProjectVersions(String projectKey) {
-        return executeWithErrorHandling(() -> JiraScraperService.getProjectVersions(projectKey),
+    public List<Version> getProjectVersionsFromJiraApi(String projectKey) {
+        return executeWithErrorHandling(() -> JiraScraperService.getProjectVersionsFromJiraApi(projectKey),
                 "Error retrieving project versions for " + projectKey);
     }
 
     @Nullable
-    public List<Ticket> getProjectTickets(String projectKey, List<Version> versions) {
-        return executeWithErrorHandling(() -> JiraScraperService.getProjectTickets(projectKey, versions),
+    public List<Ticket> getProjectTicketsFromJiraApi(String projectKey, List<Version> versions) {
+        return executeWithErrorHandling(() -> JiraScraperService.getProjectTicketsFromJiraApi(projectKey, versions),
                 "Error retrieving tickets for " + projectKey);
     }
 

@@ -14,7 +14,7 @@ public class Main {
         JiraScraperController jiraScraperController = new JiraScraperController();
 
         // Controllers logic
-        List<Version> versions = jiraScraperController.getProjectVersions(PROJECT_KEY);
-        List<Ticket> tickets = jiraScraperController.getProjectTickets(PROJECT_KEY, versions);
+        List<Version> versions = jiraScraperController.getProjectVersionsFromJiraApi(PROJECT_KEY);
+        List<Ticket> tickets = jiraScraperController.getProjectTicketsFromJiraApi(PROJECT_KEY, versions);
     }
 }

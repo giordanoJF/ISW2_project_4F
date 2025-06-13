@@ -36,3 +36,5 @@
 --  TODOS -> use them, add new ones based on this txt, and finally work on them
 --  Now we make all methods generic and able to handle null values gracefully.
                                 nex we will look for param check before calling methods in JiraScraper. and logic check
+-- rename methods
+-- we could add versions with no info

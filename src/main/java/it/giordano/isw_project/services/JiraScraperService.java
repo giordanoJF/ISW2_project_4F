@@ -140,22 +140,19 @@ public final class JiraScraperService {
      * @throws IllegalArgumentException if projectKey is null or empty
      */
     @Nonnull
-    public static List<Version> getProjectVersions(@Nullable String projectKey) throws IOException {
+    public static List<Version> getProjectVersionsFromJiraApi(@Nullable String projectKey) throws IOException {
         if ((projectKey == null || projectKey.trim().isEmpty())) {
             throw new IllegalArgumentException("Project key cannot be null or empty");
         }
 
         String url = buildVersionsUrl(projectKey);
-        if (url.trim().isEmpty()) {
-            throw new IllegalArgumentException("Constructed URL cannot be null or empty");
-        }
 
         String jsonResponse = executeGetRequest(url);
-        if ((jsonResponse == null || jsonResponse.trim().isEmpty())) {
+        if (jsonResponse == null || jsonResponse.trim().isEmpty()) {
             throw new IOException("jsonResponse is null or empty for " + projectKey);
         }
 
-        return parseVersionsFromJsonResponse(jsonResponse, projectKey);
+        return buildVersionsFromJsonResponse(jsonResponse, projectKey);
     }
 
     // VERSIONS METHODS --> Helper methods, all non-reusable outside this class
@@ -172,16 +169,16 @@ public final class JiraScraperService {
      * @throws IllegalArgumentException if projectKey is null or empty
      */
     @Nonnull
-    private static List<Version> parseVersionsFromJsonResponse(@Nullable String jsonResponse,
+    private static List<Version> buildVersionsFromJsonResponse(@Nullable String jsonResponse,
                                                                @Nullable String projectKey) {
-        List<Version> versions = new ArrayList<>();
-
         if ((jsonResponse == null || jsonResponse.trim().isEmpty())) {
-            throw new IllegalArgumentException("JSON response cannot be null or empty");
+            throw new IllegalArgumentException("JSON str response cannot be null or empty");
         }
         if ((projectKey == null || projectKey.trim().isEmpty())) {
             throw new IllegalArgumentException("Project key cannot be null or empty");
         }
+
+        List<Version> versions = new ArrayList<>();
 
         JSONArray versionArray = new JSONArray(jsonResponse);
         if (versionArray.isEmpty()) {
@@ -191,8 +188,8 @@ public final class JiraScraperService {
 
         for (int i = 0; i < versionArray.length(); i++) {
             JSONObject versionJson = versionArray.optJSONObject(i);
-            if (versionJson != null && !versionJson.isEmpty()) {
-                Version version = parseVersionFromJson(versionJson);
+            if (versionJson != null && !versionJson.isEmpty()) { // probably we are not adding empty versions
+                Version version = buildVersionFromJson(versionJson);
                 versions.add(version);
             }
         }
@@ -212,19 +209,19 @@ public final class JiraScraperService {
      * @throws IllegalArgumentException if versionJson is null
      */
     @Nonnull
-    private static Version parseVersionFromJson(@Nullable JSONObject versionJson) {
+    private static Version buildVersionFromJson(@Nullable JSONObject versionJson) {
         if (versionJson == null) {
             throw new IllegalArgumentException("Version JSON object cannot be null");
         }
         if (versionJson.isEmpty()) {
             LOGGER.warning("Empty version JSON object encountered\n");
-            return new Version(); // Return an empty version if JSON is empty
+            return new Version(); // Return an empty version if JSON is empty. never reached from the caller.
         }
 
         Version version = new Version();
         version.setId(versionJson.optString(FIELD_ID, null));
         version.setName(versionJson.optString(FIELD_NAME, null));
-        setVersionReleaseDate(version, versionJson);
+        setVersionReleaseDateFromJson(version, versionJson);
         return version;
     }
 
@@ -239,7 +236,7 @@ public final class JiraScraperService {
      * @param versionJson the JSON object containing version data
      * @throws IllegalArgumentException if either parameter is null
      */
-    private static void setVersionReleaseDate(@Nullable Version version, @Nullable JSONObject versionJson) {
+    private static void setVersionReleaseDateFromJson(@Nullable Version version, @Nullable JSONObject versionJson) {
         if (version == null) {
             throw new IllegalArgumentException("Version object cannot be null");
         }
@@ -371,7 +368,7 @@ public final class JiraScraperService {
      * @throws IllegalArgumentException if projectKey is null/empty or versions is null
      */
     @Nonnull
-    public static List<Ticket> getProjectTickets(@Nullable String projectKey, @Nullable List<Version> versions) throws IOException {
+    public static List<Ticket> getProjectTicketsFromJiraApi(@Nullable String projectKey, @Nullable List<Version> versions) throws IOException {
         if ((projectKey == null || projectKey.trim().isEmpty())) {
             throw new IllegalArgumentException("Project key cannot be null or empty");
         }
@@ -518,7 +515,7 @@ public final class JiraScraperService {
 
             JSONArray issuesArray = responseObj.optJSONArray(ISSUES);
             if (issuesArray != null) {
-                processIssuesArray(issuesArray, tickets, versionMap);
+                processJsonIssuesArray(issuesArray, tickets, versionMap);
             } else {
                 LOGGER.warning("No issues array found in response\n");
             }
@@ -541,9 +538,9 @@ public final class JiraScraperService {
      * @param versionMap the map of versions for ticket processing
      * @throws IllegalArgumentException if any parameter is null
      */
-    private static void processIssuesArray(@Nullable JSONArray issuesArray,
-                                           @Nullable List<Ticket> tickets,
-                                           @Nullable Map<String, Version> versionMap) {
+    private static void processJsonIssuesArray(@Nullable JSONArray issuesArray,
+                                               @Nullable List<Ticket> tickets,
+                                               @Nullable Map<String, Version> versionMap) {
 
         if (issuesArray == null || tickets == null || versionMap == null) {
             throw new IllegalArgumentException("Issues array, tickets list, and version map cannot be null");
@@ -559,7 +556,7 @@ public final class JiraScraperService {
         for (int i = 0; i < issuesArray.length(); i++) {
             JSONObject issueJson = issuesArray.optJSONObject(i);
             if (issueJson != null) {
-                Ticket ticket = parseTicket(issueJson, versionMap);
+                Ticket ticket = buildTicketFromJson(issueJson, versionMap);
                 tickets.add(ticket);
             }
         }
@@ -577,8 +574,8 @@ public final class JiraScraperService {
      * @throws IllegalArgumentException if issueJson or versionMap is null
      */
     @Nonnull
-    private static Ticket parseTicket(@Nullable JSONObject issueJson,
-                                      @Nullable Map<String, Version> versionMap) {
+    private static Ticket buildTicketFromJson(@Nullable JSONObject issueJson,
+                                              @Nullable Map<String, Version> versionMap) {
         if (issueJson == null || versionMap == null) {
             throw new IllegalArgumentException("Issue JSON and version map cannot be null");
         }
@@ -596,9 +593,9 @@ public final class JiraScraperService {
             return ticket; // Return ticket with just the key
         }
 
-        setTicketDates(ticket, fields);
-        setTicketVersions(ticket, fields, versionMap);
-        setDerivedVersions(ticket, versionMap);
+        setAllTicketDatesFromJson(ticket, fields);
+        setNonDerivedTicketVersionsFromJson(ticket, fields, versionMap);
+        setDerivedTicketVersionsFromItsVersions(ticket, versionMap);
 
         return ticket;
     }
@@ -612,7 +609,7 @@ public final class JiraScraperService {
      * @param fields the JSON fields object containing date information
      * @throws IllegalArgumentException if ticket or fields is null
      */
-    private static void setTicketDates(@Nullable Ticket ticket, @Nullable JSONObject fields) {
+    private static void setAllTicketDatesFromJson(@Nullable Ticket ticket, @Nullable JSONObject fields) {
 
         if (ticket == null || fields == null) {
             throw new IllegalArgumentException("Ticket and fields cannot be null");
@@ -620,8 +617,8 @@ public final class JiraScraperService {
 
         SimpleDateFormat dateFormat = new SimpleDateFormat(TICKET_DATE_FORMAT_PATTERN);
 
-        setTicketCreatedDate(ticket, fields, dateFormat);
-        setTicketResolutionDate(ticket, fields, dateFormat);
+        setTicketCreatedDateFromJson(ticket, fields, dateFormat);
+        setTicketResolutionDateFromJson(ticket, fields, dateFormat);
     }
 
     /**
@@ -632,8 +629,8 @@ public final class JiraScraperService {
      * @param dateFormat the date format to use for parsing
      * @throws IllegalArgumentException if any parameter is null
      */
-    private static void setTicketCreatedDate(@Nullable Ticket ticket, @Nullable JSONObject fields,
-                                             @Nullable SimpleDateFormat dateFormat) {
+    private static void setTicketCreatedDateFromJson(@Nullable Ticket ticket, @Nullable JSONObject fields,
+                                                     @Nullable SimpleDateFormat dateFormat) {
         if (ticket == null || fields == null || dateFormat == null) {
             throw new IllegalArgumentException("Ticket, fields, and date format cannot be null");
         }
@@ -661,8 +658,8 @@ public final class JiraScraperService {
      * @param dateFormat the date format to use for parsing
      * @throws IllegalArgumentException if any parameter is null
      */
-    private static void setTicketResolutionDate(@Nullable Ticket ticket, @Nullable JSONObject fields,
-                                                @Nullable SimpleDateFormat dateFormat) {
+    private static void setTicketResolutionDateFromJson(@Nullable Ticket ticket, @Nullable JSONObject fields,
+                                                        @Nullable SimpleDateFormat dateFormat) {
         if (ticket == null || fields == null || dateFormat == null) {
             throw new IllegalArgumentException("Ticket, fields, and date format cannot be null");
         }
@@ -692,8 +689,8 @@ public final class JiraScraperService {
      * @param versionMap the map of versions for lookup
      * @throws IllegalArgumentException if ticket, fields, or versionMap is null
      */
-    private static void setTicketVersions(@Nullable Ticket ticket, @Nullable JSONObject fields,
-                                          @Nullable Map<String, Version> versionMap) {
+    private static void setNonDerivedTicketVersionsFromJson(@Nullable Ticket ticket, @Nullable JSONObject fields,
+                                                            @Nullable Map<String, Version> versionMap) {
         if (ticket == null || fields == null || versionMap == null) {
             throw new IllegalArgumentException("Ticket, fields, and version map cannot be null");
         }
@@ -703,10 +700,10 @@ public final class JiraScraperService {
         }
 
         // Set fixed versions
-        addVersionsFromJsonArray(ticket, fields.optJSONArray(FIELD_FIX_VERSIONS), versionMap, true);
+        addFixOrAffectedVersionsFromJsonArray(ticket, fields.optJSONArray(FIELD_FIX_VERSIONS), versionMap, true);
 
         // Set affected versions
-        addVersionsFromJsonArray(ticket, fields.optJSONArray(FIELD_VERSIONS), versionMap, false);
+        addFixOrAffectedVersionsFromJsonArray(ticket, fields.optJSONArray(FIELD_VERSIONS), versionMap, false);
 
         // Set most recent fixed version
         if (ticket.getFixedVersions() == null || ticket.getFixedVersions().isEmpty()) {
@@ -728,8 +725,8 @@ public final class JiraScraperService {
      * @param isFixVersion true if these are fix versions, false for affected versions
      * @throws IllegalArgumentException if ticket or versionMap is null
      */
-    private static void addVersionsFromJsonArray(@Nullable Ticket ticket, @Nullable JSONArray versionsArray,
-                                                 @Nullable Map<String, Version> versionMap, boolean isFixVersion) {
+    private static void addFixOrAffectedVersionsFromJsonArray(@Nullable Ticket ticket, @Nullable JSONArray versionsArray,
+                                                              @Nullable Map<String, Version> versionMap, boolean isFixVersion) {
         if (ticket == null || versionMap == null) {
             throw new IllegalArgumentException("Ticket and version map cannot be null");
         }
@@ -744,7 +741,7 @@ public final class JiraScraperService {
         for (int i = 0; i < versionsArray.length(); i++) {
             JSONObject versionJson = versionsArray.optJSONObject(i);
             if (versionJson != null) {
-                processVersionJson(ticket, versionJson, versionMap, isFixVersion);
+                addFixOrAffectedVersionsFromJson(ticket, versionJson, versionMap, isFixVersion);
             }
         }
     }
@@ -761,8 +758,8 @@ public final class JiraScraperService {
      * @param isFixVersion true if this is a fix version, false for affected version
      * @throws IllegalArgumentException if ticket, versionJson, or versionMap is null
      */
-    private static void processVersionJson(@Nullable Ticket ticket, @Nullable JSONObject versionJson,
-                                           @Nullable Map<String, Version> versionMap, boolean isFixVersion) {
+    private static void addFixOrAffectedVersionsFromJson(@Nullable Ticket ticket, @Nullable JSONObject versionJson,
+                                                         @Nullable Map<String, Version> versionMap, boolean isFixVersion) {
         if (ticket == null || versionJson == null || versionMap == null) {
             throw new IllegalArgumentException("Ticket, version JSON, and version map cannot be null");
         }
@@ -792,7 +789,7 @@ public final class JiraScraperService {
      * @param versionMap the map of all available versions
      * @throws IllegalArgumentException if ticket or versionMap is null
      */
-    private static void setDerivedVersions(@Nullable Ticket ticket, @Nullable Map<String, Version> versionMap) {
+    private static void setDerivedTicketVersionsFromItsVersions(@Nullable Ticket ticket, @Nullable Map<String, Version> versionMap) {
         if (ticket == null || versionMap == null) {
             throw new IllegalArgumentException("Ticket and version map cannot be null");
         }
@@ -801,8 +798,8 @@ public final class JiraScraperService {
             throw new IllegalArgumentException("Version map cannot be empty");
         }
 
-        setInjectedVersionFromAffectedVersions(ticket);
-        setOpeningVersion(ticket, versionMap);
+        setTicketInjectedVersionFromAffectedVersions(ticket);
+        setTicketOpeningVersionFromItsProjectVersions(ticket, versionMap);
     }
 
     //possible reuse
@@ -816,7 +813,7 @@ public final class JiraScraperService {
      * @param ticket the ticket to update
      * @throws IllegalArgumentException if ticket is null
      */
-    private static void setInjectedVersionFromAffectedVersions(@Nullable Ticket ticket) {
+    private static void setTicketInjectedVersionFromAffectedVersions(@Nullable Ticket ticket) {
         if (ticket == null) {
             throw new IllegalArgumentException("Ticket cannot be null");
         }
@@ -841,7 +838,7 @@ public final class JiraScraperService {
      * @param versionMap the map of all available versions
      * @throws IllegalArgumentException if ticket or versionMap is null
      */
-    private static void setOpeningVersion(@Nullable Ticket ticket, @Nullable Map<String, Version> versionMap) {
+    private static void setTicketOpeningVersionFromItsProjectVersions(@Nullable Ticket ticket, @Nullable Map<String, Version> versionMap) {
         if (ticket == null || versionMap == null) {
             throw new IllegalArgumentException("Ticket and version map cannot be null");
         }
