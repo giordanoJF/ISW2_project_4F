@@ -8,6 +8,7 @@ import java.util.List;
 
 @Nullable
 public class Ticket {
+
     @Nullable private String key;
     @Nullable private Date createdDate;
     @Nullable private Date resolutionDate;

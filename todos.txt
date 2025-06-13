@@ -13,7 +13,7 @@
 --  rewrite all old classes
 -- migrate methods to lightweight JiraScraper class
 -- use @NonNull/@Nullable annotations also in other classes
--- change profile on laptop of intellij to use @NonNull/@Nullable annotations
+-- change profile on laptop of intellij to use @NonNull/@Nullable annotations or maybe synchronize.
 -- check the csv has all expected fields
 
 \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
@@ -31,3 +31,8 @@
                                 3. Check again the logic
 
 \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+--  rearrange classes spaces
+--  TODOS -> use them, add new ones based on this txt, and finally work on them
+--  Now we make all methods generic and able to handle null values gracefully.
+                                nex we will look for param check before calling methods in JiraScraper. and logic check

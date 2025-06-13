@@ -2,6 +2,9 @@ package it.giordano.isw_project.services;
 
 import it.giordano.isw_project.models.Ticket;
 import it.giordano.isw_project.models.Version;
+import it.giordano.isw_project.utils.DateUtils;
+import it.giordano.isw_project.utils.TicketUtils;
+import it.giordano.isw_project.utils.VersionUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.apache.http.HttpEntity;
@@ -120,6 +123,7 @@ public final class JiraScraperService {
     private JiraScraperService() {
         throw new IllegalStateException("Utility class");
     }
+
 
 
     // VERSIONS METHODS --> Main methods, all non-reusable outside this class
@@ -256,7 +260,7 @@ public final class JiraScraperService {
 
         try {
             SimpleDateFormat dateFormat = new SimpleDateFormat(VERSION_DATE_FORMAT_PATTERN);
-            version.setReleaseDate(parseDate(dateStr, dateFormat));
+            version.setReleaseDate(DateUtils.parseDate(dateStr, dateFormat));
         } catch (ParseException e) {
             LOGGER.log(Level.WARNING, "Failed to parse release date for version {0}: {1}\n",
                     new Object[]{version.getName(), dateStr});
@@ -341,30 +345,6 @@ public final class JiraScraperService {
         }
     }
 
-    //reusable also in other classes
-    /**
-     * Parses a date string using the specified format.
-     *
-     * <p>Utility method for parsing date strings with proper null handling.</p>
-     *
-     * @param dateString the date string to parse
-     * @param dateFormat the SimpleDateFormat to use for parsing
-     * @return the parsed Date object, or null if dateString is null/empty
-     * @throws ParseException if the date string cannot be parsed
-     * @throws IllegalArgumentException if dateFormat is null
-     */
-    @Nullable
-    public static Date parseDate(@Nullable String dateString, @Nullable SimpleDateFormat dateFormat)
-            throws ParseException {
-        if (dateFormat == null) {
-            throw new IllegalArgumentException("Date format cannot be null");
-        }
-        if ((dateString == null || dateString.trim().isEmpty())) {
-            return null;
-        }
-
-        return dateFormat.parse(dateString);
-    }
 
 
 
@@ -399,7 +379,7 @@ public final class JiraScraperService {
             throw new IllegalArgumentException("Versions list cannot be null or empty");
         }
 
-        Map<String, Version> versionMap = createVersionMap(versions);
+        Map<String, Version> versionMap = VersionUtils.createVersionMap(versions);
         if (versionMap.isEmpty()) {
             throw new IllegalArgumentException("Version map cannot be empty");
         }
@@ -417,40 +397,7 @@ public final class JiraScraperService {
         return fetchAllTickets(encodedJql, versionMap);
     }
 
-
-
     // TICKETS METHODS --> Helper methods
-
-    //possible reuse
-    /**
-     * Creates a map of versions indexed by their names.
-     *
-     * <p>This utility method creates a lookup map for quick version retrieval
-     * by name during ticket processing.</p>
-     *
-     * @param versions the list of versions to map
-     * @return a map with version names as keys and Version objects as values
-     * @throws IllegalArgumentException if versions is null
-     */
-    @Nonnull
-    public static Map<String, Version> createVersionMap(@Nullable List<Version> versions) {
-        Map<String, Version> versionMap = new HashMap<>();
-        if (versions == null || versions.isEmpty()) {
-            throw new IllegalArgumentException("Versions list cannot be null");
-        }
-
-        for (Version version : versions) {
-            if (version != null && !(version.getName() == null || version.getName().trim().isEmpty())) {
-                versionMap.put(version.getName(), version);
-            }
-        }
-
-        if (versionMap.isEmpty()) {
-            throw new IllegalArgumentException("Version map cannot be empty - no valid versions found");
-        }
-
-        return versionMap;
-    }
 
     /**
      * Returns the list of required fields for ticket queries.
@@ -460,90 +407,6 @@ public final class JiraScraperService {
     @Nonnull
     private static String getRequiredFields() {
         return "key,summary,description,created,resolutiondate,status,resolution,versions,fixVersions";
-    }
-
-    //possible reuse
-    /**
-     * Finds the oldest version with a release date from a list of versions.
-     *
-     * <p>This method is used to determine the injected version for tickets,
-     * which is typically the oldest affected version that has a release date.</p>
-     *
-     * @param versions the list of versions to search
-     * @return the oldest version with a release date, or null if none found
-     * @throws IllegalArgumentException if versions is null
-     */
-    @Nullable
-    public static Version findOldestVersionWithReleaseDate(@Nullable List<Version> versions) {
-        if (versions == null || versions.isEmpty()) {
-            throw new IllegalArgumentException("Versions list cannot be null or empty");
-        }
-
-        Version oldestVersion = null;
-
-        // Find the first version with a release date
-        for (Version version : versions) {
-            if (version != null && version.getReleaseDate() != null) {
-                oldestVersion = version;
-                break;
-            }
-        }
-
-        // Find the oldest version
-        if (oldestVersion != null) {
-            for (Version version : versions) {
-                if (version != null && version.getReleaseDate() != null &&
-                        version.getReleaseDate().before(oldestVersion.getReleaseDate())) {
-                    oldestVersion = version;
-                }
-            }
-        }
-
-        return oldestVersion;
-    }
-
-    //possible reuse
-    /**
-     * Checks if a version is valid for being an opening version.
-     *
-     * <p>A version is valid for opening if it has a release date and
-     * was released before or on the ticket creation date.</p>
-     *
-     * @param version the version to check
-     * @param createdDate the ticket creation date
-     * @return true if the version is valid for opening, false otherwise
-     * @throws IllegalArgumentException if createdDate is null
-     */
-    private static boolean isValidVersionForOpening(@Nullable Version version, @Nullable Date createdDate) {
-        if (createdDate == null) {
-            throw new IllegalArgumentException("Created date cannot be null");
-        }
-        return version != null &&
-                version.getReleaseDate() != null &&
-                !version.getReleaseDate().after(createdDate);
-    }
-
-    //possible reuse
-    /**
-     * Checks if a version is more recent than the current latest version.
-     *
-     * <p>Used to find the most recent valid opening version for a ticket.</p>
-     *
-     * @param version the version to check
-     * @param currentLatest the current latest version to compare against
-     * @return true if the version is more recent, false otherwise
-     * @throws IllegalArgumentException if version is null
-     */
-    private static boolean isMoreRecentThanCurrent(@Nullable Version version, @Nullable Version currentLatest) {
-        if (version == null) {
-            throw new IllegalArgumentException("Version cannot be null");
-        }
-        if (version.getReleaseDate() == null) {
-            return false; // If the version has no release date, it cannot be more recent
-        }
-        return currentLatest == null ||
-                (currentLatest.getReleaseDate() != null &&
-                        version.getReleaseDate().after(currentLatest.getReleaseDate()));
     }
 
     /**
@@ -778,7 +641,7 @@ public final class JiraScraperService {
         String createdDateStr = fields.optString(FIELD_CREATED_DATE, null);
         if (!(createdDateStr == null || createdDateStr.trim().isEmpty())) {
             try {
-                ticket.setCreatedDate(parseDate(createdDateStr, dateFormat));
+                ticket.setCreatedDate(DateUtils.parseDate(createdDateStr, dateFormat));
             } catch (ParseException e) {
                 LOGGER.log(Level.WARNING, "Failed to parse created date for ticket {0}: {1}\n",
                         new Object[]{ticket.getKey(), createdDateStr});
@@ -807,7 +670,7 @@ public final class JiraScraperService {
         String resolutionDateStr = fields.optString(FIELD_RESOLUTION_DATE, null);
         if (!(resolutionDateStr == null || resolutionDateStr.trim().isEmpty())) {
             try {
-                ticket.setResolutionDate(parseDate(resolutionDateStr, dateFormat));
+                ticket.setResolutionDate(DateUtils.parseDate(resolutionDateStr, dateFormat));
             } catch (ParseException e) {
                 LOGGER.log(Level.WARNING, "Failed to parse resolution date for ticket {0}: {1}\n",
                         new Object[]{ticket.getKey(), resolutionDateStr});
@@ -849,40 +712,8 @@ public final class JiraScraperService {
         if (ticket.getFixedVersions() == null || ticket.getFixedVersions().isEmpty()) {
             ticket.setFixedVersion(null);
         } else {
-            ticket.setFixedVersion(mostRecentVersionFromList(ticket.getFixedVersions()));
+            ticket.setFixedVersion(VersionUtils.mostRecentVersionFromList(ticket.getFixedVersions()));
         }
-    }
-
-    //possible reuse
-    /**
-     * Finds the most recent version from a list of versions.
-     *
-     * <p>Used to determine the most recent fixed version for a ticket.</p>
-     *
-     * @param versions the list of versions to search
-     * @return the most recent Version object, or null if the list is empty
-     */
-    @Nullable
-    private static Version mostRecentVersionFromList(@Nullable List<Version> versions) {
-        if (versions == null){
-            return null; // Return null if the list is null
-        }
-
-        if (versions.isEmpty()) {
-            return null;
-        }
-
-        Version mostRecent = null;
-        for (Version version : versions) {
-            if (version == null || version.getReleaseDate() == null) {
-                continue; // Skip null versions or versions without a release date
-            }
-            if (mostRecent == null || (version.getReleaseDate() != null &&
-                    (mostRecent.getReleaseDate() == null || version.getReleaseDate().after(mostRecent.getReleaseDate())))) {
-                mostRecent = version;
-            }
-        }
-        return mostRecent;
     }
 
     /**
@@ -947,30 +778,7 @@ public final class JiraScraperService {
 
         Version version = versionMap.get(versionName);
         if (version != null) {
-            addVersionToTicket(ticket, version, isFixVersion);
-        }
-    }
-
-    /**
-     * Adds a version to a ticket as either a fix version or an affected version.
-     *
-     * <p>Utility method to encapsulate the logic of adding versions to tickets.</p>
-     *
-     * @param ticket the ticket to update
-     * @param version the version to add
-     * @param isFixVersion true if this is a fix version, false for affected version
-     * @throws IllegalArgumentException if ticket or version is null
-     */
-    //possible reuse
-    private static void addVersionToTicket(@Nullable Ticket ticket, @Nullable Version version, boolean isFixVersion) {
-        if (ticket == null || version == null) {
-            throw new IllegalArgumentException("Ticket and version cannot be null");
-        }
-
-        if (isFixVersion) {
-            ticket.addFixedVersion(version);
-        } else {
-            ticket.addAffectedVersion(version);
+            TicketUtils.addFixedOrAffectedToTicket(ticket, version, isFixVersion);
         }
     }
 
@@ -1018,7 +826,7 @@ public final class JiraScraperService {
             return;
         }
 
-        Version oldestVersion = findOldestVersionWithReleaseDate(affectedVersions);
+        Version oldestVersion = VersionUtils.findOldestVersionWithReleaseDate(affectedVersions);
         ticket.setInjectedVersion(oldestVersion);
     }
 
@@ -1049,8 +857,8 @@ public final class JiraScraperService {
         Version latestVersion = null;
 
         for (Version version : versionMap.values()) {
-            if (isValidVersionForOpening(version, createdDate) &&
-                    isMoreRecentThanCurrent(version, latestVersion)) {
+            if (VersionUtils.isValidVersionForOpening(version, createdDate) &&
+                    VersionUtils.isMoreRecentThanCurrent(version, latestVersion)) {
                 latestVersion = version;
             }
         }

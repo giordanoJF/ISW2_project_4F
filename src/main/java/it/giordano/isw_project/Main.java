@@ -16,6 +16,5 @@ public class Main {
         // Controllers logic
         List<Version> versions = jiraScraperController.getProjectVersions(PROJECT_KEY);
         List<Ticket> tickets = jiraScraperController.getProjectTickets(PROJECT_KEY, versions);
-
     }
 }

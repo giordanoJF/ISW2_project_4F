@@ -15,6 +15,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class JiraScraperController {
+
     @Nonnull private static final Logger LOGGER = Objects.requireNonNull(Logger.getLogger(JiraScraperController.class.getName()));
 
     @Nullable
@@ -76,5 +77,4 @@ public class JiraScraperController {
             return null;
         }
     }
-
 }

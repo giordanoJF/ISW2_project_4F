@@ -6,6 +6,7 @@ import java.util.Date;
 
 @Nullable
 public class Version {
+
     @Nullable private String id;
     @Nullable private String name;
     @Nullable private Date releaseDate;
