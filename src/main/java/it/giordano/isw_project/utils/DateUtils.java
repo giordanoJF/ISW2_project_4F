@@ -29,7 +29,7 @@ public final class DateUtils {
      * @throws IllegalArgumentException if dateFormat is null
      */
     @Nullable
-    public static Date parseDate(@Nullable String dateString, @Nullable SimpleDateFormat dateFormat)
+    public static Date strToDate(@Nullable String dateString, @Nullable SimpleDateFormat dateFormat)
             throws ParseException {
         if (dateFormat == null) {
             throw new IllegalArgumentException("Date format cannot be null");

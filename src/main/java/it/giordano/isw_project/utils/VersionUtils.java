@@ -24,7 +24,7 @@ public final class VersionUtils {
      * @return the most recent Version object, or null if the list is empty
      */
     @Nullable
-    public static Version mostRecentVersionFromList(@Nullable List<Version> versions) {
+    public static Version findNewestVersionFromVersions(@Nullable List<Version> versions) {
         if (versions == null){
             throw new IllegalArgumentException("versions cannot be null");
         }
@@ -60,7 +60,7 @@ public final class VersionUtils {
      * TODO: Could be splitted into two methods.
      */
     @Nullable
-    public static Version findOldestVersionWithReleaseDate(@Nullable List<Version> versions) {
+    public static Version findOldestVersionFromVersions(@Nullable List<Version> versions) {
         if (versions == null) {
             throw new IllegalArgumentException("Versions list cannot be null or empty");
         }

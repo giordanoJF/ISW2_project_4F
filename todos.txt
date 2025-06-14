@@ -38,3 +38,10 @@
                                 nex we will look for param check before calling methods in JiraScraper. and logic check
 -- rename methods
 -- we could add versions with no info
+-- check checks of tickets method according to handle null values gracefully.
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+check all new classes has methods logically grouped
+check logic class by class for null check and params
+
